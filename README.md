@@ -51,9 +51,9 @@ Toutes les sources sont gratuites.
 | Étape | Commande | Module |
 | --- | --- | --- |
 | 1. Extraction S2 masquée | `make extract` | `forest_dieback.gee` |
-| 2. Indices spectraux | `make indices` | `forest_dieback.indices` |
+| 2. Indices spectraux | *(à venir, avec le cube)* | `forest_dieback.indices` |
 | 3. Référence FORDEAD | `make fordead` | `scripts/run_fordead.py` |
-| 4. Jeu d'entraînement | `make dataset` | `forest_dieback.dataset` |
+| 4. Jeu d'entraînement | *(à venir)* | `forest_dieback.dataset` |
 | 5. Entraînement | `make train` | `forest_dieback.train` |
 | 6. Évaluation | `make evaluate` | `forest_dieback.evaluate` |
 | 7. Frugalité | `make export benchmark` | `forest_dieback.export` |

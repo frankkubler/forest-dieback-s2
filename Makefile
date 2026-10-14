@@ -1,4 +1,4 @@
-.PHONY: install lint test extract fordead dataset train demo export benchmark figures
+.PHONY: install lint test extract fordead train demo export benchmark
 
 install:
 	pip install -e ".[dev]"

@@ -6,13 +6,13 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 
 - [x] Compte et projet Google Earth Engine
 - [ ] Choix de la zone, export des séries Sentinel-2 masquées (`make extract`)
-- [ ] Indices et figure pixel sain / pixel attaqué (`make indices`, `scripts/plot_pixel.py`)
+- [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
 - [ ] README illustré, dépôt public
 
 ## Jalon 2 — entretien technique (6 soirées)
 
-- [ ] Jeu d'entraînement et découpage spatial par blocs (`make dataset`)
+- [ ] Jeu d'entraînement et découpage spatial par blocs (script `build_dataset` à écrire)
 - [ ] TempCNN : entraînement et premiers résultats (`make train`)
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
 - [ ] Export ONNX, mesures de frugalité, Docker et CI (`make export benchmark`)

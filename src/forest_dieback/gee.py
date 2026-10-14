@@ -63,7 +63,7 @@ def export_to_drive(cfg: dict[str, Any], year: int | None = None) -> list[ee.bat
     """Lance un export GeoTIFF par date vers Google Drive.
 
     Un fichier par date et par zone garde des exports légers ; ils sont
-    ensuite empilés en cube xarray par ``scripts/build_cube.py``.
+    ensuite empilés en cube xarray (script à venir).
     """
     aoi = aoi_geometry(cfg["aoi"]["bbox"])
     col = daily_mosaics(s2_collection(cfg, aoi))
