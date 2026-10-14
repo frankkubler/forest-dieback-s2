@@ -1,0 +1,54 @@
+# Paramètres du pipeline. Les chemins sont relatifs à la racine du dépôt.
+
+gee:
+  project: null            # surchargé par la variable d'environnement GEE_PROJECT
+  drive_folder: forest-dieback-s2
+
+aoi:
+  name: hautes-vosges-thur-doller
+  # Carré d'environ 20 x 20 km couvrant les vallées de la Thur et de la Doller (WGS84)
+  bbox: [6.88, 47.75, 7.15, 47.93]   # [lon_min, lat_min, lon_max, lat_max]
+  crs: EPSG:32632                    # UTM 32N
+
+sentinel2:
+  collection: COPERNICUS/S2_SR_HARMONIZED
+  cloud_score: GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED
+  cloud_score_band: cs_cdf
+  clear_threshold: 0.60     # pixel conservé si cs_cdf >= seuil
+  start_date: "2017-01-01"
+  end_date: "2026-10-01"
+  bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+  scale: 10                 # m ; les bandes à 20 m sont rééchantillonnées
+
+indices: [CRSWIR, NDVI, NDWI]
+
+labels:
+  fordead_dir: data/raw/fordead
+  spruce_mask: data/raw/bdforet_epicea.gpkg
+  control_points: data/raw/control_points.gpkg
+
+dataset:
+  # Grille régulière : 10 jours sur la période, interpolation linéaire des dates manquantes
+  resample_days: 10
+  block_size_m: 2000        # taille des blocs spatiaux pour le découpage train/val/test
+  split: {train: 0.7, val: 0.15, test: 0.15}
+  seed: 42
+
+model:
+  name: tempcnn
+  hidden: 64
+  kernel_size: 5
+  dropout: 0.2
+
+train:
+  epochs: 30
+  batch_size: 512
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  mlflow_experiment: forest-dieback-s2
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  models: models

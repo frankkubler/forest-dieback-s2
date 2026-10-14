@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Données et artefacts : jamais versionnés
+data/*
+!data/README.md
+models/
+mlruns/
+mlartifacts/
+*.tif
+*.zarr
+*.nc
+*.onnx
+*.pt
