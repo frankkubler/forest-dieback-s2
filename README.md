@@ -56,7 +56,7 @@ Toutes les sources sont gratuites.
 | 4. Jeu d'entraînement | *(à venir)* | `forest_dieback.dataset` |
 | 5. Entraînement | `make train` | `forest_dieback.train` |
 | 6. Évaluation | `make evaluate` | `forest_dieback.evaluate` |
-| 7. Frugalité | `make export benchmark` | `forest_dieback.export` |
+| 7. Frugalité | `make benchmark` | `forest_dieback.export` |
 
 Tous les paramètres (zone, dates, bandes, hyperparamètres) sont dans [`configs/default.yaml`](configs/default.yaml).
 
@@ -65,19 +65,22 @@ Tous les paramètres (zone, dates, bandes, hyperparamètres) sont dans [`configs
 ```bash
 git clone https://github.com/frankkubler/forest-dieback-s2.git
 cd forest-dieback-s2
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync --all-extras          # crée .venv (Python 3.11, PyTorch CPU) — ou : make install
+make demo                     # pipeline complet sur données synthétiques
 
 # Google Earth Engine
-earthengine authenticate
+uv run earthengine authenticate
 export GEE_PROJECT=<ton-projet-gee>   # ou renseigner gee.project dans configs/default.yaml
+uv run python scripts/extract_s2.py --dry-run
 ```
+
+L'environnement est géré par [uv](https://docs.astral.sh/uv/) : toutes les commandes passent par `uv run`, sans activer de venv.
 
 Avec Docker :
 
 ```bash
 docker build -t forest-dieback-s2 .
-docker run --rm -v $PWD/data:/app/data forest-dieback-s2 make train
+docker run --rm -v $PWD/data:/app/data forest-dieback-s2 make train RUN=
 ```
 
 ## Structure

@@ -15,7 +15,7 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 - [ ] Jeu d'entraînement et découpage spatial par blocs (script `build_dataset` à écrire)
 - [ ] TempCNN : entraînement et premiers résultats (`make train`)
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
-- [ ] Export ONNX, mesures de frugalité, Docker et CI (`make export benchmark`)
+- [ ] Export ONNX, mesures de frugalité, Docker et CI (`make benchmark`)
 - [ ] Option Sentinel-1 ou Transformer temporel, puis mise à jour du README
 
 ## Sources
