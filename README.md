@@ -50,7 +50,7 @@ Toutes les sources sont gratuites.
 
 | Étape | Commande | Module |
 | --- | --- | --- |
-| 1. Extraction S2 masquée | `make extract` | `forest_dieback.gee` |
+| 1. Extraction S2 masquée | `make extract-check`, `extract-samples`, `extract-rasters` | `forest_dieback.gee` |
 | 2. Indices spectraux | *(à venir, avec le cube)* | `forest_dieback.indices` |
 | 3. Référence FORDEAD | `make fordead` | `scripts/run_fordead.py` |
 | 4. Jeu d'entraînement | *(à venir)* | `forest_dieback.dataset` |
@@ -59,6 +59,24 @@ Toutes les sources sont gratuites.
 | 7. Frugalité | `make benchmark` | `forest_dieback.export` |
 
 Tous les paramètres (zone, dates, bandes, hyperparamètres) sont dans [`configs/default.yaml`](configs/default.yaml).
+
+### Extraction Sentinel-2
+
+Exporter chaque image brute de la zone représenterait environ 1 300 dates et 200 Go. Tout est donc réduit côté Earth Engine :
+
+- composites médians sur une grille de 10 jours, après masquage Cloud Score+ ;
+- cinq bandes seulement (B4, B8, B8A, B11, B12), suffisantes pour CRSWIR, NDVI et NDWI, en entiers 16 bits ;
+- pixels limités au masque des épicéas (BD Forêt V2 envoyée en asset GEE) ou, à défaut, aux arbres d'ESA WorldCover.
+
+Deux sorties, une tâche Drive par année :
+
+| Commande | Sortie | Usage |
+| --- | --- | --- |
+| `extract_s2.py samples` | CSV des séries de 5 000 pixels tirés dans le masque (~10 Mo par an) | entraînement, figures |
+| `extract_s2.py points --file …` | CSV des séries aux points d'un fichier (ex. points de contrôle) | évaluation |
+| `extract_s2.py rasters` | une pile GeoTIFF par année (bandes `AAAAMMJJ_Bx`) | carte des détections |
+
+`extract_s2.py check` affiche le nombre d'images, la part de la zone couverte par le masque et le volume attendu, sans rien exporter.
 
 ## Installation
 
@@ -71,7 +89,7 @@ make demo                     # pipeline complet sur données synthétiques
 # Google Earth Engine
 uv run earthengine authenticate
 export GEE_PROJECT=<ton-projet-gee>   # ou renseigner gee.project dans configs/default.yaml
-uv run python scripts/extract_s2.py --dry-run
+make extract-check
 ```
 
 L'environnement est géré par [uv](https://docs.astral.sh/uv/) : toutes les commandes passent par `uv run`, sans activer de venv.

@@ -25,3 +25,24 @@ def test_normalize_fills_nan():
     out, mean, std = normalize(s)
     assert not np.isnan(out).any()
     assert mean.shape == (1,)
+
+
+def test_long_table_to_cube_fills_missing_with_nan():
+    import pandas as pd
+
+    from forest_dieback.dataset import long_table_to_cube
+
+    df = pd.DataFrame({
+        "x": [0, 0, 10],
+        "y": [5, 5, 5],
+        "date": ["2023-01-01", "2023-01-11", "2023-01-11"],
+        "B4": [1.0, 2.0, 3.0],
+        "B8": [4.0, 5.0, 6.0],
+    })
+    cube, ids, dates = long_table_to_cube(
+        df, ["B4", "B8"], dates=["2023-01-01", "2023-01-11", "2023-01-21"])
+    assert cube.shape == (2, 3, 2)
+    assert list(ids["x"]) == [0, 10]
+    np.testing.assert_allclose(cube[0, :2], [[1, 4], [2, 5]])
+    assert np.isnan(cube[1, 0]).all() and np.isnan(cube[:, 2]).all()
+    assert len(dates) == 3

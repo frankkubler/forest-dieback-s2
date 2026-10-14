@@ -5,7 +5,9 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 ## Jalon 1 — publiable (4 soirées)
 
 - [x] Compte et projet Google Earth Engine
-- [ ] Choix de la zone, export des séries Sentinel-2 masquées (`make extract`)
+- [ ] Choix de la zone, vérification avec `make extract-check`
+- [ ] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`)
+- [ ] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
 - [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
 - [ ] README illustré, dépôt public

@@ -17,8 +17,15 @@ sentinel2:
   clear_threshold: 0.60     # pixel conservé si cs_cdf >= seuil
   start_date: "2017-01-01"
   end_date: "2026-10-01"
-  bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+  bands: [B4, B8, B8A, B11, B12]   # le nécessaire pour CRSWIR, NDVI et NDWI
+  composite_days: 10        # composites médians sur une grille de 10 jours
   scale: 10                 # m ; les bandes à 20 m sont rééchantillonnées
+
+extraction:
+  mask_asset: null          # asset GEE des épicéas (scripts/prepare_spruce_mask.py) ;
+                            # null : classe « arbres » d'ESA WorldCover
+  n_samples: 5000           # pixels tirés pour la commande « samples »
+  seed: 42
 
 indices: [CRSWIR, NDVI, NDWI]
 
@@ -28,8 +35,6 @@ labels:
   control_points: data/raw/control_points.gpkg
 
 dataset:
-  # Grille régulière : 10 jours sur la période, interpolation linéaire des dates manquantes
-  resample_days: 10
   block_size_m: 2000        # taille des blocs spatiaux pour le découpage train/val/test
   split: {train: 0.7, val: 0.15, test: 0.15}
   seed: 42
