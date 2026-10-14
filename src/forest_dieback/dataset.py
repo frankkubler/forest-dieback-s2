@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
@@ -21,6 +22,29 @@ def resample_series(dates: np.ndarray, values: np.ndarray, grid: np.ndarray) -> 
         elif ok.sum() == 1:
             out[:, c] = values[ok, c][0]
     return out
+
+
+def long_table_to_cube(df: pd.DataFrame, bands: list[str], dates=None,
+                       id_cols: tuple[str, ...] = ("x", "y")):
+    """Table longue exportée de GEE (une ligne par pixel et par date) -> cube.
+
+    Renvoie le cube (N, T, C), les identifiants des pixels (N lignes) et les
+    dates (T). Les couples (pixel, date) absents de la table (nuages,
+    composite vide) valent NaN. ``dates`` impose la grille temporelle ; par
+    défaut, toutes les dates présentes dans la table.
+    """
+    df = df.assign(date=pd.to_datetime(df["date"]))
+    if dates is None:
+        dates = sorted(df["date"].unique())
+    dates = pd.DatetimeIndex(pd.to_datetime(dates))
+    ids = df[list(id_cols)].drop_duplicates().sort_values(list(id_cols)).reset_index(drop=True)
+    grid = ids.merge(pd.DataFrame({"date": dates}), how="cross")
+    values = (
+        df.set_index([*id_cols, "date"])[bands]
+        .reindex(pd.MultiIndex.from_frame(grid))
+        .to_numpy(dtype=np.float32)
+    )
+    return values.reshape(len(ids), len(dates), len(bands)), ids, dates
 
 
 def spatial_block_split(
