@@ -16,13 +16,16 @@ dependencies = [
   "torch>=2.2",
   "matplotlib>=3.8",
   "mlflow>=2.12",
+  "onnx>=1.16",
+  "onnxruntime>=1.17",
 ]
 
 [project.optional-dependencies]
 gee = ["earthengine-api>=1.0", "geemap>=0.32"]
 geo = ["xarray>=2024.1", "rioxarray>=0.15", "geopandas>=0.14", "zarr>=2.17"]
-onnx = ["onnx>=1.16", "onnxruntime>=1.17"]
-dev = ["pytest>=8.0", "ruff>=0.4", "forest-dieback[gee,geo,onnx]"]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.4"]
 
 [project.scripts]
 fd-train = "forest_dieback.train:main"
@@ -30,6 +33,16 @@ fd-export = "forest_dieback.export:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# PyTorch CPU (plus léger que les roues CUDA de PyPI) sous Linux et Windows ;
+# sous macOS, la roue PyPI est déjà CPU/MPS.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }]
 
 [tool.ruff]
 line-length = 100
