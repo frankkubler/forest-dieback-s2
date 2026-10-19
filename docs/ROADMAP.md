@@ -6,7 +6,7 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 
 - [x] Compte et projet Google Earth Engine
 - [x] Choix de la zone, vérification avec `make extract-check`
-- [ ] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`, voir [EXTRACTION.md](EXTRACTION.md))
+- [x] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`, voir [EXTRACTION.md](EXTRACTION.md))
 - [ ] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
 - [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
@@ -54,6 +54,10 @@ Le masque retient « Sapin, épicéa » et « Conifères » (`labels.spruce_esse
 soit 88,9 km², 22 % de la zone, contre 84 % pour les arbres d'ESA WorldCover.
 « Mixte » est écarté bien qu'il pèse le double : la plupart de ses pixels n'ont
 pas d'épicéa et bruiteraient autant les étiquettes FORDEAD que l'entraînement.
+
+Une fois l'asset ingéré, Earth Engine en mesure 88,1 km² sur 881 237 pixels à
+10 m, pour 374 entités comme le GeoPackage local : l'écart de 0,9 % avec la
+géométrie est celui de la rasterisation.
 
 ## Sources
 

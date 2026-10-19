@@ -25,7 +25,7 @@ sentinel2:
   scale: 10                 # m ; les bandes à 20 m sont rééchantillonnées
 
 extraction:
-  mask_asset: null          # asset GEE des épicéas (scripts/prepare_spruce_mask.py) ;
+  mask_asset: projects/forest-dieback-s2/assets/bdforet_epicea          # asset GEE des épicéas (scripts/prepare_spruce_mask.py) ;
                             # null : classe « arbres » d'ESA WorldCover
   n_samples: 5000           # pixels tirés pour la commande « samples »
   seed: 42
