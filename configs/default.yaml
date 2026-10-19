@@ -18,6 +18,9 @@ sentinel2:
   start_date: "2017-01-01"
   end_date: "2026-10-01"
   bands: [B4, B8, B8A, B11, B12]   # le nécessaire pour CRSWIR, NDVI et NDWI
+  tiles: [32TLT, 32ULU]     # tuiles MGRS retenues ; null : toutes celles qui touchent la zone.
+                            # Quatre tuiles voient les Hautes-Vosges et livrent les mêmes dates ;
+                            # garder la seule zone UTM 32 évite une reprojection des réflectances.
   composite_days: 10        # composites médians sur une grille de 10 jours
   scale: 10                 # m ; les bandes à 20 m sont rééchantillonnées
 

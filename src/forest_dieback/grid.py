@@ -57,3 +57,24 @@ def estimate_bytes(n_pixels: int, n_periods: int, n_bands: int,
                    bytes_per_value: int = 2) -> int:
     """Volume brut (non compressé) d'une pile de composites."""
     return n_pixels * n_periods * n_bands * bytes_per_value
+
+
+def coverage_summary(periods: list[tuple[date, date]], fractions: list[float],
+                     season: tuple[int, int] = (4, 9),
+                     threshold: float = 0.5) -> dict[str, float]:
+    """Résumé des parts de pixels clairs d'une année de composites.
+
+    ``season`` borne les mois où le dépérissement se lit le mieux (feuillaison
+    complète) ; ``threshold`` marque les composites trop troués pour servir.
+    """
+    if not fractions:
+        return {"mean": 0.0, "season_mean": 0.0, "n_season": 0, "n_poor": 0, "n_total": 0}
+    pairs = zip(periods, fractions, strict=True)  # une fraction par composite, sinon c'est un bug
+    in_season = [f for (s_, _), f in pairs if season[0] <= s_.month <= season[1]]
+    return {
+        "mean": sum(fractions) / len(fractions),
+        "season_mean": sum(in_season) / len(in_season) if in_season else 0.0,
+        "n_season": len(in_season),
+        "n_poor": sum(f < threshold for f in fractions),
+        "n_total": len(fractions),
+    }

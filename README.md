@@ -66,7 +66,10 @@ Exporter chaque image brute de la zone représenterait environ 1 300 dates et 20
 
 - composites médians sur une grille de 10 jours, après masquage Cloud Score+ ;
 - cinq bandes seulement (B4, B8, B8A, B11, B12), suffisantes pour CRSWIR, NDVI et NDWI, en entiers 16 bits ;
-- pixels limités au masque des épicéas (BD Forêt V2 envoyée en asset GEE) ou, à défaut, aux arbres d'ESA WorldCover.
+- pixels limités au masque des épicéas (BD Forêt V2 envoyée en asset GEE) ou, à défaut, aux arbres d'ESA WorldCover ;
+- images restreintes aux tuiles MGRS d'une seule zone UTM (`sentinel2.tiles`) : quatre tuiles voient les Hautes-Vosges
+  et livrent les mêmes acquisitions, n'en garder que deux divise le calcul par deux sans perdre une seule date et
+  évite de reprojeter des réflectances à la volée.
 
 Deux sorties, une tâche Drive par année :
 
@@ -76,7 +79,7 @@ Deux sorties, une tâche Drive par année :
 | `extract_s2.py points --file …` | CSV des séries aux points d'un fichier (ex. points de contrôle) | évaluation |
 | `extract_s2.py rasters` | une pile GeoTIFF par année (bandes `AAAAMMJJ_Bx`) | carte des détections |
 
-`extract_s2.py check` affiche le nombre d'images, la part de la zone couverte par le masque et le volume attendu, sans rien exporter.
+`extract_s2.py check` affiche le nombre d'images, la part de la zone couverte par le masque et le volume attendu, sans rien exporter. L'option `--coverage` mesure en plus la part de pixels clairs de chaque composite : c'est ce chiffre qui dit si la série est assez continue pour qu'une rupture y soit détectable.
 
 ## Installation
 

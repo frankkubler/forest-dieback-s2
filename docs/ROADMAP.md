@@ -5,7 +5,7 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 ## Jalon 1 — publiable (4 soirées)
 
 - [x] Compte et projet Google Earth Engine
-- [ ] Choix de la zone, vérification avec `make extract-check`
+- [x] Choix de la zone, vérification avec `make extract-check`
 - [ ] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`)
 - [ ] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
 - [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
@@ -19,6 +19,25 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
 - [ ] Export ONNX, mesures de frugalité, Docker et CI (`make benchmark`)
 - [ ] Option Sentinel-1 ou Transformer temporel, puis mise à jour du README
+
+## Zone retenue
+
+Carré de 20 × 20 km des vallées de la Thur et de la Doller, vérifié avec
+`extract_s2.py check --coverage` :
+
+| Chiffre | Valeur |
+| --- | --- |
+| Emprise | 2017 × 2004 pixels à 10 m |
+| Tuiles MGRS | quatre touchent la zone ; `32TLT` + `32ULU` la couvrent à 100 % |
+| Images S2 (2017–2026) | 2 890 après filtre de tuiles, contre 5 774 sans |
+| Composites | 37 par an sur une grille de 10 jours |
+| Couverture claire 2022 | 86 % en moyenne, 89 % d'avril à septembre, 5 composites sur 37 sous 50 % |
+| Couverture claire 2023 | 72 % en moyenne, 79 % d'avril à septembre, 12 composites sur 37 sous 50 % |
+
+La série est donc assez continue sur la saison de végétation, qui porte le
+signal du dépérissement. Le masque reste provisoirement celui des arbres
+d'ESA WorldCover (84 % de la zone, feuillus compris) : il sera remplacé par
+les peuplements sapin-épicéa de la BD Forêt V2 avant les exports.
 
 ## Sources
 

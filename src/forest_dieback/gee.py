@@ -25,6 +25,7 @@ from .grid import band_names, year_periods
 WORLDCOVER = "ESA/WorldCover/v200"
 WORLDCOVER_TREES = 10
 NODATA = 0
+COVERAGE_SCALE = 100  # m ; assez fin pour une part de surface, et rapide
 
 
 def init(project: str | None) -> None:
@@ -39,20 +40,29 @@ def aoi_geometry(bbox: list[float]) -> ee.Geometry:
 
 
 def s2_collection(cfg: dict[str, Any], aoi: ee.Geometry) -> ee.ImageCollection:
-    """Images S2 L2A de la zone, masquées par Cloud Score+, bandes utiles."""
+    """Images S2 L2A de la zone, masquées par Cloud Score+, bandes utiles.
+
+    ``sentinel2.tiles`` restreint aux tuiles MGRS indiquées. Les tuiles se
+    recouvrent largement : une zone peut être vue par quatre d'entre elles,
+    qui livrent les mêmes acquisitions. Garder celles d'une seule zone UTM
+    divise d'autant le calcul et évite une reprojection à la volée des
+    réflectances, qui bruiterait la série sans ajouter une seule date.
+    """
     s2c = cfg["sentinel2"]
     band, threshold = s2c["cloud_score_band"], s2c["clear_threshold"]
+    col = (
+        ee.ImageCollection(s2c["collection"])
+        .filterBounds(aoi)
+        .filterDate(s2c["start_date"], s2c["end_date"])
+    )
+    tiles = s2c.get("tiles")
+    if tiles:
+        col = col.filter(ee.Filter.inList("MGRS_TILE", list(tiles)))
 
     def mask(img: ee.Image) -> ee.Image:
         return img.updateMask(img.select(band).gte(threshold)).select(s2c["bands"])
 
-    return (
-        ee.ImageCollection(s2c["collection"])
-        .filterBounds(aoi)
-        .filterDate(s2c["start_date"], s2c["end_date"])
-        .linkCollection(ee.ImageCollection(s2c["cloud_score"]), [band])
-        .map(mask)
-    )
+    return col.linkCollection(ee.ImageCollection(s2c["cloud_score"]), [band]).map(mask)
 
 
 def forest_mask(cfg: dict[str, Any]) -> ee.Image:
@@ -187,6 +197,28 @@ def export_series_table(cfg: dict[str, Any], year: int, points: ee.FeatureCollec
     )
     task.start()
     return task
+
+
+def clear_fractions(cfg: dict[str, Any], year: int) -> list[float]:
+    """Part de la zone masquée où chaque composite de l'année a une valeur claire.
+
+    C'est le chiffre qui décide de la zone : une série temporelle trop trouée
+    ne permet de détecter aucune rupture. Une requête GEE par année.
+    """
+    comp, _ = year_composites(cfg, year)
+    aoi, mask = aoi_geometry(cfg["aoi"]["bbox"]), forest_mask(cfg)
+    band = cfg["sentinel2"]["bands"][0]
+
+    def fraction(img):
+        return (
+            ee.Image(img).select(band).mask().unmask(0).updateMask(mask)
+            .reduceRegion(ee.Reducer.mean(), aoi, scale=COVERAGE_SCALE,
+                          maxPixels=int(1e9), bestEffort=True)
+            .get(band)
+        )
+
+    values = comp.toList(comp.size()).map(fraction).getInfo()
+    return [v or 0.0 for v in values]
 
 
 def describe(cfg: dict[str, Any]) -> dict[str, Any]:

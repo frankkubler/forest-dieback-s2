@@ -1,6 +1,7 @@
 """Étape 1 : extraction GEE des composites Sentinel-2 masqués.
 
     python scripts/extract_s2.py check                 # chiffres clés, aucun export
+    python scripts/extract_s2.py check --coverage --years 2022   # trous de la série
     python scripts/extract_s2.py samples               # séries de pixels tirés (CSV)
     python scripts/extract_s2.py points --file data/raw/control_points.gpkg
     python scripts/extract_s2.py rasters --years 2022 2023
@@ -16,7 +17,13 @@ from pathlib import Path
 
 from forest_dieback import gee
 from forest_dieback.config import load_config
-from forest_dieback.grid import bbox_shape, estimate_bytes, year_periods, years_in_range
+from forest_dieback.grid import (
+    bbox_shape,
+    coverage_summary,
+    estimate_bytes,
+    year_periods,
+    years_in_range,
+)
 
 
 def selected_years(cfg, years):
@@ -50,6 +57,16 @@ def cmd_check(cfg, args):
     n_rows = ex["n_samples"] * n_periods
     print(f"Échantillons : {ex['n_samples']} pixels, au plus {n_rows} lignes CSV "
           f"(~{n_rows * 60 / 1e6:.0f} Mo)")
+    if args.coverage:
+        print("Part de la zone masquée où le composite est clair "
+              "(une requête GEE par année) :")
+        for year in selected_years(cfg, args.years):
+            periods = year_periods(year, s2c["composite_days"],
+                                   s2c["start_date"], s2c["end_date"])
+            c = coverage_summary(periods, gee.clear_fractions(cfg, year))
+            print(f"  {year} : moyenne {c['mean']:.0%}, "
+                  f"avril-septembre {c['season_mean']:.0%} sur {c['n_season']} composites, "
+                  f"{c['n_poor']}/{c['n_total']} composites sous 50 %")
 
 
 def cmd_rasters(cfg, args):
@@ -92,7 +109,9 @@ def main() -> None:
         sp.set_defaults(func=func)
         return sp
 
-    add("check", cmd_check, "chiffres clés de la zone, sans export")
+    add("check", cmd_check, "chiffres clés de la zone, sans export").add_argument(
+        "--coverage", action="store_true",
+        help="mesurer la part de pixels clairs par composite (lent)")
     add("rasters", cmd_rasters, "piles annuelles de composites (GeoTIFF)")
     add("samples", cmd_samples, "séries de pixels tirés dans le masque (CSV)").add_argument(
         "--n", type=int, help="nombre de pixels (défaut : extraction.n_samples)")

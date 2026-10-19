@@ -3,6 +3,7 @@ from datetime import date
 from forest_dieback.grid import (
     band_names,
     bbox_shape,
+    coverage_summary,
     estimate_bytes,
     year_periods,
     years_in_range,
@@ -42,3 +43,21 @@ def test_bbox_shape_of_study_area():
 
 def test_estimate_bytes():
     assert estimate_bytes(100, 3, 5) == 3000
+
+
+def test_coverage_summary_separates_the_growing_season():
+    periods = year_periods(2022, 10)
+    # 0 % en janvier et février, 100 % le reste de l'année
+    fractions = [0.0 if start.month <= 2 else 1.0 for start, _ in periods]
+    c = coverage_summary(periods, fractions)
+    assert c["n_total"] == 37
+    assert c["n_poor"] == 6          # les six composites de janvier et février
+    assert c["n_season"] == 19       # avril à septembre
+    assert c["season_mean"] == 1.0   # la saison utile est intacte
+    assert 0.8 < c["mean"] < 0.85    # alors que la moyenne annuelle est entamée
+
+
+def test_coverage_summary_handles_a_year_without_any_composite():
+    assert coverage_summary([], []) == {
+        "mean": 0.0, "season_mean": 0.0, "n_season": 0, "n_poor": 0, "n_total": 0,
+    }
