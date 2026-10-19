@@ -2,7 +2,7 @@
 RUN ?= uv run
 
 .PHONY: install lint test spruce-mask extract-check extract-samples extract-rasters \
-        fordead train demo benchmark
+        fordead dataset train demo benchmark
 
 install:          ## environnement complet (.venv) avec toutes les extras
 	uv sync --all-extras
@@ -32,6 +32,9 @@ extract-rasters:  ## 1. piles annuelles de composites (GeoTIFF vers Drive)
 
 fordead:          ## 3. méthode de référence (fordead installé à part)
 	python scripts/run_fordead.py --input data/raw/s2_theia
+
+dataset:          ## 4. jeu d'entraînement depuis les CSV rapatriés dans data/raw/s2/
+	$(RUN) python scripts/build_dataset.py
 
 train:            ## 5. entraînement TempCNN
 	$(RUN) python -m forest_dieback.train --data data/processed/dataset.npz

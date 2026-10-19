@@ -181,3 +181,39 @@ commande — le projet est obligatoire :
 ```bash
 uv run earthengine --project=<projet> task list
 ```
+
+## 10. Rapatrier les exports
+
+Les fichiers arrivent dans le dossier `gee.drive_folder` du **Drive du compte
+Google utilisé par `earthengine authenticate`**, qui n'est pas forcément celui
+auquel on pense : le Code Editor affiche ce compte en haut à droite. Earth
+Engine crée le dossier à la première tâche.
+
+Tout se range dans `data/raw/s2/` :
+
+| Fichier | Rôle | Lu par |
+| --- | --- | --- |
+| `samples_<zone>_<année>.csv` | séries des pixels tirés | `make dataset` |
+| `s2_<zone>_<année>.tif` | pile annuelle de composites | carte des détections |
+| `s2_<zone>_<année>_bands.json` | ordre des bandes, déjà écrit en local | lecture des piles |
+
+Un nom de fichier ne dit pas avec quel masque il a été produit. Si deux séries
+ont tourné, seule la date de création les distingue — d'où la règle de ne rien
+exporter avant que le masque soit actif, et de vider le dossier en cas de
+doute.
+
+## 11. Construire le jeu d'entraînement
+
+```bash
+make dataset                                              # sans étiquettes
+uv run python scripts/build_dataset.py --labels data/raw/fordead/zones.gpkg
+```
+
+Le script assemble les CSV sur la grille régulière des composites, passe aux
+indices (`indices` de la configuration, CRSWIR en premier), comble les trous
+nuageux par interpolation linéaire, écarte les pixels sans aucune observation
+et découpe l'espace en blocs. Il écrit `data/processed/dataset.npz`, que
+`make train` et `scripts/plot_pixel.py` lisent directement.
+
+Il affiche au passage la part d'observations claires et l'équilibre des
+classes : deux chiffres à regarder avant d'entraîner quoi que ce soit.

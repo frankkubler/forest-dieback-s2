@@ -11,5 +11,7 @@ data/
 │   ├── bdforet_epicea.gpkg    peuplements sapin-épicéa de la zone (+ .zip pour GEE)
 │   └── control_points.gpkg    ~200 points photo-interprétés (BD ORTHO)
 ├── interim/                   cube xarray, sorties fordead
-└── processed/dataset.npz      séries par pixel : series (N,T,C), labels, x, y
+└── processed/dataset.npz      séries par pixel : series (N,T,C) des indices,
+                            labels (0 sain, 1 attaqué), x, y, split,
+                            dates (T) et channels (C)
 ```

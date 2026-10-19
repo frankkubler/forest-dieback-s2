@@ -7,6 +7,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from .indices import compute_indices
+
 
 def resample_series(dates: np.ndarray, values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     """Interpole une série irrégulière (T, C) sur une grille de dates régulière.
@@ -45,6 +47,45 @@ def long_table_to_cube(df: pd.DataFrame, bands: list[str], dates=None,
         .to_numpy(dtype=np.float32)
     )
     return values.reshape(len(ids), len(dates), len(bands)), ids, dates
+
+
+def scale_reflectance(cube: np.ndarray, scale_factor: float = 1e-4,
+                      nodata: float = 0.0) -> np.ndarray:
+    """Réflectances entières exportées de GEE -> flottants, nodata en NaN.
+
+    L'export code les réflectances en entiers (x 10 000) et réserve 0 pour
+    « pas de donnée » : hors masque, ou aucune observation claire. Une
+    réflectance nulle est physiquement improbable sur un couvert forestier,
+    la confondre avec un trou est sans conséquence.
+    """
+    out = np.asarray(cube, dtype=np.float32).copy()
+    out[out == nodata] = np.nan
+    return out * scale_factor
+
+
+def cube_to_indices(cube: np.ndarray, bands: list[str], names: list[str]) -> np.ndarray:
+    """Cube de réflectances (N, T, B) -> cube d'indices (N, T, len(names)).
+
+    ``compute_indices`` signale lui-même une bande absente du cube.
+    """
+    if cube.shape[2] != len(bands):
+        raise ValueError(f"{cube.shape[2]} bandes dans le cube pour {len(bands)} noms donnés")
+    per_band = {b: cube[:, :, i] for i, b in enumerate(bands)}
+    values = compute_indices(per_band, names)
+    return np.stack([values[n] for n in names], axis=-1).astype(np.float32)
+
+
+def interpolate_gaps(cube: np.ndarray, dates: np.ndarray) -> np.ndarray:
+    """Comble les trous temporels de chaque pixel par interpolation linéaire.
+
+    ``dates`` est en jours. Les composites nuageux laissent des NaN que le
+    modèle ne sait pas lire ; une série sans aucune observation sur un canal
+    reste à NaN, et c'est à l'appelant de la traiter.
+    """
+    out = np.empty_like(cube, dtype=np.float32)
+    for i in range(cube.shape[0]):
+        out[i] = resample_series(dates, cube[i], dates)
+    return out
 
 
 def spatial_block_split(

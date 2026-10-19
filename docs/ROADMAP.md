@@ -7,14 +7,14 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 - [x] Compte et projet Google Earth Engine
 - [x] Choix de la zone, vérification avec `make extract-check`
 - [x] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`, voir [EXTRACTION.md](EXTRACTION.md))
-- [ ] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
+- [x] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
 - [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
 - [ ] README illustré, dépôt public
 
 ## Jalon 2 — entretien technique (6 soirées)
 
-- [ ] Jeu d'entraînement et découpage spatial par blocs (script `build_dataset` à écrire)
+- [ ] Jeu d'entraînement et découpage spatial par blocs (`make dataset`) — script écrit, en attente des étiquettes FORDEAD
 - [ ] TempCNN : entraînement et premiers résultats (`make train`)
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
 - [ ] Export ONNX, mesures de frugalité, Docker et CI (`make benchmark`)
@@ -58,6 +58,21 @@ pas d'épicéa et bruiteraient autant les étiquettes FORDEAD que l'entraînemen
 Une fois l'asset ingéré, Earth Engine en mesure 88,1 km² sur 881 237 pixels à
 10 m, pour 374 entités comme le GeoPackage local : l'écart de 0,9 % avec la
 géométrie est celui de la rasterisation.
+
+## Volumes exportés
+
+Les 20 tâches ont abouti en 2 h 31 pour **3,93 Go** sur Drive, à comparer aux
+14,6 Go bruts annoncés par `extract-check` :
+
+| Sortie | Estimation brute | Réel | Rapport |
+| --- | --- | --- | --- |
+| 10 piles annuelles (GeoTIFF) | 14,6 Go | **3,86 Go** | 26 % |
+| 10 séries de pixels (CSV) | au plus 108 Mo | **73,7 Mo** | 68 % |
+
+L'estimation porte sur la grille pleine et ignore le masque : 78 % des pixels
+d'une pile sont nuls et se compressent presque entièrement. Les piles vont de
+240 Mo (2017, où Sentinel-2B n'opère qu'à partir de mars, d'où des composites
+vides) à 468 Mo (2025).
 
 ## Sources
 

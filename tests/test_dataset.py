@@ -1,6 +1,13 @@
 import numpy as np
 
-from forest_dieback.dataset import normalize, resample_series, spatial_block_split
+from forest_dieback.dataset import (
+    cube_to_indices,
+    interpolate_gaps,
+    normalize,
+    resample_series,
+    scale_reflectance,
+    spatial_block_split,
+)
 
 
 def test_resample_interpolates_and_skips_nan():
@@ -46,3 +53,32 @@ def test_long_table_to_cube_fills_missing_with_nan():
     np.testing.assert_allclose(cube[0, :2], [[1, 4], [2, 5]])
     assert np.isnan(cube[1, 0]).all() and np.isnan(cube[:, 2]).all()
     assert len(dates) == 3
+
+
+def test_scale_reflectance_turns_nodata_into_nan():
+    cube = np.array([[[0, 1500, 2000]]], dtype=np.uint16)
+    out = scale_reflectance(cube)
+    assert np.isnan(out[0, 0, 0])            # le 0 de GEE est un trou
+    np.testing.assert_allclose(out[0, 0, 1:], [0.15, 0.20])
+
+
+def test_cube_to_indices_puts_crswir_first():
+    bands = ["B4", "B8", "B8A", "B11", "B12"]
+    cube = np.full((2, 3, 5), 0.2, dtype=np.float32)
+    out = cube_to_indices(cube, bands, ["CRSWIR", "NDVI", "NDWI"])
+    assert out.shape == (2, 3, 3)
+    # bandes égales : le continuum vaut B11, donc CRSWIR = 1 ; NDVI et NDWI = 0
+    np.testing.assert_allclose(out[..., 0], 1.0, atol=1e-5)
+    np.testing.assert_allclose(out[..., 1:], 0.0, atol=1e-5)
+
+
+def test_cube_to_indices_refuses_a_band_count_mismatch():
+    import pytest
+    with pytest.raises(ValueError, match="bandes"):
+        cube_to_indices(np.zeros((1, 2, 3)), ["B4", "B8", "B8A", "B11", "B12"], ["NDVI"])
+
+
+def test_interpolate_gaps_fills_cloudy_dates():
+    cube = np.array([[[0.0], [np.nan], [2.0]]], dtype=np.float32)
+    out = interpolate_gaps(cube, np.array([0.0, 10.0, 20.0]))
+    np.testing.assert_allclose(out[0, :, 0], [0.0, 1.0, 2.0])

@@ -52,9 +52,9 @@ Toutes les sources sont gratuites.
 | --- | --- | --- |
 | 0. Masque résineux | `make spruce-mask` | `forest_dieback.masks` |
 | 1. Extraction S2 masquée | `make extract-check`, `extract-samples`, `extract-rasters` | `forest_dieback.gee` |
-| 2. Indices spectraux | *(à venir, avec le cube)* | `forest_dieback.indices` |
+| 2. Indices spectraux | *(calculés par l'étape 4)* | `forest_dieback.indices` |
 | 3. Référence FORDEAD | `make fordead` | `scripts/run_fordead.py` |
-| 4. Jeu d'entraînement | *(à venir)* | `forest_dieback.dataset` |
+| 4. Jeu d'entraînement | `make dataset` | `forest_dieback.dataset` |
 | 5. Entraînement | `make train` | `forest_dieback.train` |
 | 6. Évaluation | `make evaluate` | `forest_dieback.evaluate` |
 | 7. Frugalité | `make benchmark` | `forest_dieback.export` |
@@ -84,6 +84,22 @@ Deux sorties, une tâche Drive par année :
 | `extract_s2.py rasters` | une pile GeoTIFF par année (bandes `AAAAMMJJ_Bx`) | carte des détections |
 
 `extract_s2.py check` affiche le nombre d'images, la part de la zone couverte par le masque et le volume attendu, sans rien exporter. L'option `--coverage` mesure en plus la part de pixels clairs de chaque composite : c'est ce chiffre qui dit si la série est assez continue pour qu'une rupture y soit détectable.
+
+### Jeu d'entraînement
+
+Une fois les CSV rapatriés de Drive dans `data/raw/s2/`, `make dataset` les assemble en
+`data/processed/dataset.npz` : lecture des tables longues, empilement sur la grille
+régulière des composites, passage aux indices, comblement des trous nuageux par
+interpolation, découpage spatial par blocs.
+
+```bash
+make dataset                                              # sans étiquettes, pour inspecter
+uv run python scripts/build_dataset.py --labels data/raw/fordead/zones.gpkg
+```
+
+Les étiquettes viennent des cartes FORDEAD : ce sont des **étiquettes faibles**, qui
+reprennent les erreurs de la méthode qui les a produites. Sans `--labels`, toutes valent 0 :
+le cube se visualise mais ne s'entraîne pas.
 
 ## Installation
 
