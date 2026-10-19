@@ -13,7 +13,7 @@ La marche à suivre détaillée de ces étapes est dans [EXTRACTION.md](EXTRACTI
 - [x] Cartes scolytes FORDEAD téléchargées, étiquettes faibles de la zone
 - [x] Jeu d'entraînement et découpage spatial par blocs (`make dataset`)
 - [x] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
-- [ ] README illustré, dépôt public
+- [x] README illustré, dépôt public
 
 ## Jalon 2 — entretien technique (6 soirées)
 

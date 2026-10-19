@@ -25,7 +25,7 @@ def load(args):
     if args.synthetic:
         from forest_dieback.synthetic import make_series
         series, labels, _, _ = make_series(n=400)
-        return series[:, :, 0], labels, None
+        return series[:, :, 0], labels, None, None
     d = np.load(args.data)
     canaux = [str(c) for c in d["channels"]] if "channels" in d else ["CRSWIR"]
     series = d["series"][:, :, canaux.index(args.channel)]
@@ -64,8 +64,14 @@ def main() -> None:
     p.add_argument("--data", type=Path, default=Path("data/processed/dataset.npz"))
     p.add_argument("--synthetic", action="store_true")
     p.add_argument("--channel", default="CRSWIR")
-    p.add_argument("--out", type=Path, default=Path("docs/figures/healthy_vs_attacked.png"))
+    p.add_argument("--out", type=Path, default=None,
+                   help="défaut : docs/figures/healthy_vs_attacked.png, et "
+                        "synthetic_demo.png en mode --synthetic")
     args = p.parse_args()
+    # la démo ne doit pas écraser la figure du README, tirée des vraies séries
+    if args.out is None:
+        nom = "synthetic_demo.png" if args.synthetic else "healthy_vs_attacked.png"
+        args.out = Path("docs/figures") / nom
 
     series, labels, dates, onset = load(args)
     sains, attaques = series[labels == 0], series[labels == 1]

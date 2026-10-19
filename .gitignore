@@ -13,6 +13,7 @@ models/
 mlruns/
 mlartifacts/
 mlflow.db
+docs/figures/synthetic_demo.png
 *.tif
 *.zarr
 *.nc
