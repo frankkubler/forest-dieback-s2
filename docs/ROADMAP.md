@@ -4,18 +4,21 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 
 ## Jalon 1 — publiable (4 soirées)
 
+La marche à suivre détaillée de ces étapes est dans [EXTRACTION.md](EXTRACTION.md).
+
 - [x] Compte et projet Google Earth Engine
 - [x] Choix de la zone, vérification avec `make extract-check`
-- [x] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`, voir [EXTRACTION.md](EXTRACTION.md))
+- [x] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`)
 - [x] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
-- [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
-- [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
+- [x] Cartes scolytes FORDEAD téléchargées, étiquettes faibles de la zone
+- [x] Jeu d'entraînement et découpage spatial par blocs (`make dataset`)
+- [x] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] README illustré, dépôt public
 
 ## Jalon 2 — entretien technique (6 soirées)
 
-- [ ] Jeu d'entraînement et découpage spatial par blocs (`make dataset`) — script écrit, en attente des étiquettes FORDEAD
 - [ ] TempCNN : entraînement et premiers résultats (`make train`)
+- [ ] Exécution de `fordead` sur la zone pour une référence recalculée (`make fordead`)
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
 - [ ] Export ONNX, mesures de frugalité, Docker et CI (`make benchmark`)
 - [ ] Option Sentinel-1 ou Transformer temporel, puis mise à jour du README
@@ -59,6 +62,17 @@ Une fois l'asset ingéré, Earth Engine en mesure 88,1 km² sur 881 237 pixels �
 10 m, pour 374 entités comme le GeoPackage local : l'écart de 0,9 % avec la
 géométrie est celui de la rasterisation.
 
+## Référence FORDEAD : cartes publiées ou exécution locale
+
+Le jalon 1 s'appuie sur les [cartes publiées](https://doi.org/10.57745/8LJGQ9),
+qui couvrent la zone de 2018 à 2023 et fournissent les étiquettes. Faire
+tourner `fordead` sur la zone donnerait une référence recalculée avec les
+mêmes paramètres des deux côtés, mais le package demande un environnement
+conda séparé et des tuiles Sentinel-2 au format THEIA, que les exports GEE ne
+remplacent pas : plusieurs centaines de dates à télécharger. Ce chantier est
+reporté au jalon 2, la comparaison restant possible entre-temps sur les
+cartes publiées.
+
 ## Volumes exportés
 
 Les 20 tâches ont abouti en 2 h 31 pour **3,93 Go** sur Drive, à comparer aux
@@ -73,6 +87,23 @@ L'estimation porte sur la grille pleine et ignore le masque : 78 % des pixels
 d'une pile sont nuls et se compressent presque entièrement. Les piles vont de
 240 Mo (2017, où Sentinel-2B n'opère qu'à partir de mars, d'où des composites
 vides) à 468 Mo (2025).
+
+## Jeu d'entraînement
+
+| Chiffre | Valeur |
+| --- | --- |
+| Pixels | 4 701, dont 227 attaqués (4,8 %) |
+| Pixels écartés | 299, en sol nu : classe trop ambiguë pour être étiquetée |
+| Composites | 259, de janvier 2017 à décembre 2023 |
+| Observations claires | 73,9 % des couples pixel-date, le reste interpolé |
+| Première anomalie | de mai 2018 à mai 2023 |
+| Découpage par blocs de 2 km | 3 336 train, 666 val, 699 test |
+
+Recalées sur la date de première anomalie, les deux populations se
+superposent avant la détection et divergent aussitôt après : le CRSWIR médian
+des pixels attaqués passe de 0,75 à 0,90 quand celui des pixels sains reste
+à 0,78. En temps calendaire, ce signal est invisible, les attaques s'étalant
+sur cinq ans.
 
 ## Sources
 

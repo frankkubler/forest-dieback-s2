@@ -202,12 +202,53 @@ ont tourné, seule la date de création les distingue — d'où la règle de ne 
 exporter avant que le masque soit actif, et de vider le dossier en cas de
 doute.
 
-## 11. Construire le jeu d'entraînement
+## 11. Télécharger les cartes FORDEAD
+
+Les étiquettes viennent des [cartes scolytes publiées par
+l'INRAE](https://doi.org/10.57745/8LJGQ9) (Etalab 2.0), un fichier de 377 Mo
+sur Recherche Data Gouv, dont l'API donne l'URL et le MD5 :
 
 ```bash
-make dataset                                              # sans étiquettes
-uv run python scripts/build_dataset.py --labels data/raw/fordead/zones.gpkg
+curl -sSfL "https://entrepot.recherche.data.gouv.fr/api/datasets/:persistentId/?persistentId=doi:10.57745/8LJGQ9"
+curl -sSfL "https://entrepot.recherche.data.gouv.fr/api/access/datafile/173876" \
+  -o data/raw/fordead/carto_fordead_V2023_06.zip
+7z x -odata/raw/fordead data/raw/fordead/carto_fordead_V2023_06.zip
 ```
+
+Le dossier `cartographie/` contient un shapefile par année et par région,
+`deperissement_<année>_<région>.shp` et `sol_nu_…`, de 2018 à 2023. Les codes
+région sont ceux de l'INSEE : **44** pour le Grand Est et **27** pour la
+Bourgogne-Franche-Comté, dont relève le Territoire de Belfort — les deux sont
+nécessaires pour la zone, comme pour la BD Forêt.
+
+Deux points de la notice comptent pour la comparaison :
+
+- la méthode n'est appliquée qu'aux types BD Forêt `FF2G61-61` (sapin ou
+  épicéa) et `FF2-00-00`, `FF2-90-90`, `FF2-91-91` (mélanges de conifères),
+  soit exactement les essences du masque de l'étape 5 : les deux méthodes
+  travaillent sur le même terrain ;
+- l'attribut `class` donne l'état final en quatre valeurs, de la faible
+  anomalie au sol nu, et `Date` le mois de première anomalie.
+
+## 12. Construire le jeu d'entraînement
+
+```bash
+make dataset
+```
+
+Les paramètres d'étiquetage sont dans `labels` : `dieback_maps` (motif des
+cartes), `dieback_positive` (classes comptées comme attaquées),
+`dieback_excluded` et `dieback_until`.
+
+Deux choix de méthode y sont inscrits. Les pixels en **sol nu** sortent du
+jeu au lieu d'être étiquetés : une coupe peut suivre une attaque comme être
+ordinaire, et sa signature temporelle — une chute brutale — n'a rien à voir
+avec un dépérissement progressif. Les étiquettes s'arrêtant en 2023, les
+séries sont **tronquées à la même date** : au-delà, un pixel dépérissant
+porterait une étiquette « sain » et le modèle apprendrait ce bruit.
+
+Sur la zone, cela donne 4 701 pixels dont 227 attaqués (4,8 %), sur
+259 composites.
 
 Le script assemble les CSV sur la grille régulière des composites, passe aux
 indices (`indices` de la configuration, CRSWIR en premier), écarte les valeurs

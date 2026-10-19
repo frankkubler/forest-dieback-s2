@@ -43,6 +43,16 @@ labels:
                           # pixels n'ont pas d'épicéa et bruiteraient les étiquettes.
   spruce_mask: data/raw/bdforet_epicea.gpkg
   control_points: data/raw/control_points.gpkg
+  dieback_maps: data/raw/fordead/carto_fordead_V2023_06/cartographie/deperissement_*.shp
+  dieback_class_field: class
+  dieback_date_field: Date      # mois de première anomalie (AAAA-MM)
+  dieback_positive: ["1-Faible anomalie", "2-Moyenne anomalie", "3-Forte anomalie"]
+  dieback_excluded: ["4-Sol nu"]
+                          # le sol nu suit parfois une attaque, parfois une coupe ordinaire :
+                          # ces pixels sortent du jeu au lieu d'être étiquetés à tort.
+  dieback_until: "2024-01-01"
+                          # les cartes s'arrêtent en 2023 ; au-delà, un pixel dépérissant
+                          # serait étiqueté sain, et le modèle apprendrait ce bruit.
 
 dataset:
   block_size_m: 2000        # taille des blocs spatiaux pour le découpage train/val/test

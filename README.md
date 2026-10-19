@@ -22,8 +22,15 @@ Le projet compare un modèle de deep learning temporel (**TempCNN**) à la méth
 | FORDEAD (référence) | – | – | – | – | – | – |
 | TempCNN | – | – | – | – | – | – |
 
+![CRSWIR des pixels sains et attaqués](docs/figures/healthy_vs_attacked.png)
+
+Les 4 701 pixels du jeu, recalés sur la date de première anomalie donnée par FORDEAD.
+Avant la détection, les deux populations sont indiscernables ; aussitôt après, le CRSWIR
+médian des pixels attaqués passe de 0,75 à 0,90 et y reste, quand celui des pixels sains
+ne bouge pas. En temps calendaire ce signal disparaît, les attaques s'étalant de 2018 à
+2023 — c'est tout l'enjeu d'un modèle temporel.
+
 <!-- ![Carte des détections](docs/figures/detection_map.png) -->
-<!-- ![Pixel sain vs pixel attaqué](docs/figures/healthy_vs_attacked.png) -->
 
 ## Données
 
@@ -94,13 +101,14 @@ régulière des composites, passage aux indices, rejet des valeurs hors plage ph
 des trous nuageux par interpolation, découpage spatial par blocs.
 
 ```bash
-make dataset                                              # sans étiquettes, pour inspecter
-uv run python scripts/build_dataset.py --labels data/raw/fordead/zones.gpkg
+make dataset                      # étiquettes comprises, si les cartes FORDEAD sont là
+uv run python scripts/build_dataset.py --no-labels     # cube seul, pour inspecter
 ```
 
 Les étiquettes viennent des cartes FORDEAD : ce sont des **étiquettes faibles**, qui
-reprennent les erreurs de la méthode qui les a produites. Sans `--labels`, toutes valent 0 :
-le cube se visualise mais ne s'entraîne pas.
+reprennent les erreurs de la méthode qui les a produites. Les pixels en sol nu sortent du
+jeu plutôt que d'être étiquetés, et les séries s'arrêtent avec les cartes, fin 2023
+(`labels.dieback_*`). Sur la zone : 4 701 pixels, 227 attaqués, 259 composites.
 
 ## Installation
 

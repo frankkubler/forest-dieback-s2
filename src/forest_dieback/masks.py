@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 
 def filter_stands(gdf: gpd.GeoDataFrame, field: str, values: Sequence[str],
@@ -27,24 +28,72 @@ def filter_stands(gdf: gpd.GeoDataFrame, field: str, values: Sequence[str],
 
 
 def label_from_polygons(x: Sequence[float], y: Sequence[float], crs: str,
-                        path: str, year_field: str | None = None,
-                        years: Sequence[int] | None = None) -> np.ndarray:
-    """Étiquette 1 les points tombant dans un polygone de dépérissement, 0 sinon.
+                        paths: Sequence[str] | str, class_field: str | None = None,
+                        positive: Sequence[str] | None = None,
+                        excluded: Sequence[str] | None = None,
+                        date_field: str | None = None):
+    """Étiquette les points d'après des cartes de dépérissement.
 
-    ``path`` est une couche vecteur des zones détectées (cartes FORDEAD
-    publiées, ou export d'un passage local). ``year_field`` et ``years``
-    restreignent aux polygones d'une période, quand la couche porte l'année
-    de détection ; sans eux, tous les polygones comptent.
+    ``paths`` est une ou plusieurs couches vecteur (les cartes FORDEAD sont
+    livrées par année et par région). ``class_field`` désigne l'attribut de
+    classe ; ``positive`` les valeurs qui valent « attaqué » et ``excluded``
+    celles dont les points sont trop ambigus pour entrer dans le jeu — le
+    sol nu, par exemple, qui peut suivre une attaque comme une coupe
+    ordinaire, avec une signature temporelle sans rapport.
 
-    Ce sont des **étiquettes faibles** : elles reprennent les erreurs de la
-    méthode qui les a produites. L'évaluation finale s'appuie sur les points
-    photo-interprétés, indépendants.
+    Renvoie ``(labels, drop, onset)`` : les étiquettes 0/1, le masque des
+    points à retirer, et la date de première anomalie lue dans
+    ``date_field`` (la plus ancienne quand plusieurs cartes se recouvrent,
+    chaîne vide pour un point sain). Sans ``class_field``, tout polygone
+    compte comme positif.
+
+    Ce sont des **étiquettes faibles** : elles portent les erreurs de la
+    méthode qui les a produites, d'où l'évaluation finale sur des points
+    photo-interprétés indépendants.
     """
-    zones = gpd.read_file(path)
-    if year_field is not None and years is not None:
-        zones = zones[zones[year_field].isin(list(years))]
+    if isinstance(paths, str):
+        paths = [paths]
     points = gpd.GeoDataFrame(geometry=gpd.points_from_xy(x, y), crs=crs)
-    zones = zones.to_crs(crs)
-    hit = gpd.sjoin(points, zones[["geometry"]], how="left", predicate="within")
-    hit = hit[~hit.index.duplicated(keep="first")]  # un point dans 2 polygones reste 1
-    return hit["index_right"].notna().to_numpy().astype(np.float32)
+    envelope = points.total_bounds  # ne lire que ce qui recouvre les points
+
+    frames = []
+    for path in paths:
+        head = gpd.read_file(path, rows=1)
+        bbox = gpd.GeoSeries.from_xy(
+            [envelope[0], envelope[2]], [envelope[1], envelope[3]], crs=crs
+        ).to_crs(head.crs).total_bounds
+        layer = gpd.read_file(path, bbox=tuple(bbox))
+        if len(layer):
+            frames.append(layer.to_crs(crs))
+
+    labels = np.zeros(len(points), dtype=np.float32)
+    drop = np.zeros(len(points), dtype=bool)
+    onset = np.full(len(points), "", dtype=object)
+    if not frames:
+        return labels, drop, onset
+
+    zones = gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs=crs)
+    if class_field is not None and class_field not in zones.columns:
+        cols = ", ".join(c for c in zones.columns if c != "geometry")
+        raise KeyError(f"Champ {class_field!r} absent des cartes. Disponibles : {cols}")
+
+    def join(subset: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+        if subset.empty:
+            return subset.head(0)
+        return gpd.sjoin(points, subset, how="inner", predicate="within")
+
+    attaquees = zones[zones[class_field].isin(list(positive))] if (
+        class_field and positive) else zones
+    touche = join(attaquees)
+    if len(touche):
+        labels[touche.index.unique()] = 1.0
+        if date_field and date_field in touche.columns:
+            premiere = touche.groupby(level=0)[date_field].min()
+            onset[premiere.index] = premiere.to_numpy()
+
+    if class_field and excluded:
+        ambigus = join(zones[zones[class_field].isin(list(excluded))])
+        if len(ambigus):
+            drop[ambigus.index.unique()] = True
+            drop &= labels == 0  # un pixel déjà attaqué reste dans le jeu
+    return labels, drop, onset
