@@ -7,8 +7,9 @@
     python scripts/extract_s2.py rasters --years 2022 2023
 
 Les exports partent vers Google Drive (dossier ``gee.drive_folder``), une
-tâche par année ; leur avancement se suit avec ``earthengine task list`` ou
-dans l'onglet Tasks du Code Editor.
+tâche par année ; leur avancement se suit dans l'onglet Tasks du Code Editor
+ou avec ``earthengine --project=<projet> task list`` — sans ``--project`` ni
+``GEE_PROJECT``, la commande s'arrête sur « no project found ».
 """
 
 import argparse

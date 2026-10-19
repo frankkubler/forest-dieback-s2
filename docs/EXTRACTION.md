@@ -168,3 +168,16 @@ est faux.
 
 Les exports peuvent alors partir : `make extract-samples`, puis
 `make extract-rasters`.
+
+> **Ne rien exporter avant que le masque soit actif.** Les noms de fichiers ne
+> dépendent pas du masque : une série lancée avec `mask_asset: null` produit
+> dans Drive des fichiers homonymes de ceux de la bonne série, qu'on ne
+> distingue plus ensuite que par leur date. En cas de doute, annuler les
+> tâches concernées et vider le dossier Drive avant de relancer.
+
+L'avancement se suit dans l'onglet Tasks du Code Editor ou en ligne de
+commande — le projet est obligatoire :
+
+```bash
+uv run earthengine --project=<projet> task list
+```
