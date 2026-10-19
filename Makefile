@@ -2,7 +2,7 @@
 RUN ?= uv run
 
 .PHONY: install lint test spruce-mask extract-check extract-samples extract-rasters \
-        fordead dataset train demo benchmark
+        fordead fordead-check dataset train demo benchmark
 
 install:          ## environnement complet (.venv) avec toutes les extras
 	uv sync --all-extras
@@ -29,6 +29,9 @@ extract-samples:  ## 1. séries de pixels tirés dans le masque (CSV vers Drive)
 
 extract-rasters:  ## 1. piles annuelles de composites (GeoTIFF vers Drive)
 	$(RUN) python scripts/extract_s2.py rasters
+
+fordead-check:    ## 3. accès au catalogue STAC et nombre d'images, sans calcul
+	$(RUN) python scripts/run_fordead.py --dry-run
 
 fordead:          ## 3. méthode de référence FORDEAD, lue depuis un catalogue STAC
 	$(RUN) python scripts/run_fordead.py

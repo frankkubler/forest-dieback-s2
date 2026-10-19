@@ -267,3 +267,63 @@ canal de 7 %. Il écrit `data/processed/dataset.npz`, que
 
 Il affiche au passage la part d'observations claires et l'équilibre des
 classes : deux chiffres à regarder avant d'entraîner quoi que ce soit.
+
+## 13. Recalculer la référence FORDEAD
+
+Les cartes de l'étape 11 sont déjà calculées, sur toute la France et avec les
+paramètres de leurs auteurs. Faire tourner `fordead` soi-même donne une
+référence sur la même zone, les mêmes dates et les mêmes seuils que le
+modèle : c'est ce qui rend la comparaison honnête. Cette étape est
+facultative pour obtenir des étiquettes, nécessaire pour comparer deux
+méthodes à armes égales.
+
+### Obtenir un accès aux images
+
+Depuis sa version 2, `fordead` lit un catalogue STAC plutôt que des tuiles
+téléchargées. Deux accès s'y mêlent, et un seul est ouvert :
+
+| | Hôte | Accès |
+| --- | --- | --- |
+| Recherche d'images | `api.stac.teledetection.fr` | ouvert |
+| Images elles-mêmes | `s3-data.meso.umontpellier.fr` | 403 sans jeton |
+
+Le catalogue est celui de la Maison de la Télédétection, à Montpellier. Le
+portail <https://gate.stac.teledetection.fr/> accepte quatre fournisseurs
+d'identité : Fédération ESR, **ORCID**, Data-Terra et ProConnect. ORCID
+s'obtient librement sur <https://orcid.org>, sans condition d'affiliation :
+c'est la voie ouverte à qui ne relève pas de l'enseignement supérieur.
+
+Une fois le compte créé, enregistrer une clé API permanente — l'autre
+méthode, OAuth2, n'est valable que quelques heures et redemande le
+navigateur à chaque expiration :
+
+```bash
+uv run tld apikey register
+```
+
+La clé atterrit dans `~/.config/teledetection/`. Les exécutions suivantes se
+passent de navigateur, y compris en intégration continue.
+
+### Vérifier l'accès, puis lancer
+
+```bash
+make fordead-check     # compte les images disponibles, sans rien calculer
+make fordead           # modèle harmonique puis surveillance
+```
+
+> `make fordead --dry-run` **ne fait pas** ce qu'on croit : `--dry-run` est
+> une option de make, qui affiche la commande sans l'exécuter. D'où la cible
+> `fordead-check`, qui passe bien l'option au script.
+
+Sur la zone, le contrôle annonce 742 images pour la tuile 32TLT et 663 pour
+32ULU entre 2017 et 2026. C'est le signe que l'accès fonctionne : sans clé
+valide, le script s'arrête sur une erreur d'authentification.
+
+Les périodes, le seuil d'anomalie et le nombre d'anomalies consécutives
+avant confirmation sont dans `fordead` au fichier de configuration. Par
+défaut le modèle s'ajuste sur 2017 et la surveillance démarre en 2018, la
+crise de scolytes des Vosges commençant cette année-là.
+
+Le package est sous **GPL-3** quand ce dépôt est sous MIT : il reste une
+dépendance facultative (`uv sync --all-extras`, extra `fordead`), appelée
+comme outil et non intégrée au code.

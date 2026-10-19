@@ -106,10 +106,15 @@ rien demander. Les images elles-mêmes sont ailleurs, sur
 package `teledetection` ouvre donc un flux OAuth2 « device » vers le realm
 `cdsmtd` et attend qu'un navigateur autorise le code affiché.
 
-**`make fordead` suppose donc un compte sur la plateforme THEIA/MTD.** La
-première exécution doit se faire en interactif pour autoriser l'appareil ;
-le jeton est ensuite mis en cache. L'option `--dry-run` sert à vérifier cet
-accès sans lancer de calcul.
+**`make fordead` suppose donc un compte sur la plateforme THEIA/MTD.** Le
+portail d'accès accepte ORCID, qui s'obtient librement et sans condition
+d'affiliation ; une clé API enregistrée par `tld apikey register` évite
+ensuite de repasser par le navigateur. La marche à suivre est détaillée à
+l'étape 13 d'[EXTRACTION.md](EXTRACTION.md).
+
+Une fois l'accès en place, `make fordead-check` dénombre les images sans
+rien calculer : 742 sur la tuile 32TLT et 663 sur 32ULU entre 2017 et 2026,
+soit 1 405 dates à traiter pour couvrir la zone.
 
 Le package s'installe donc avec le reste (`uv sync --all-extras`, extra
 `fordead`). Il impose Python 3.12 par sa dépendance `simplestac`, ce qui a
