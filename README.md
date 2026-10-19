@@ -34,7 +34,7 @@ Toutes les sources sont gratuites.
 | Sentinel-2 L2A (2017–2026) | Séries de réflectance, 10–20 m | GEE `COPERNICUS/S2_SR_HARMONIZED` |
 | Cloud Score+ | Masque des nuages et des ombres | GEE `GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED` |
 | [Cartes scolytes FORDEAD](https://doi.org/10.57745/8LJGQ9) | Étiquettes faibles | Recherche Data Gouv, Etalab 2.0 |
-| BD Forêt V2 (IGN) | Masque des peuplements d'épicéas | Géoservices IGN |
+| BD Forêt V2 (IGN) | Masque des peuplements d'épicéas (départements 68, 88 et 90) | Géoservices IGN |
 | BD ORTHO (IGN) | Photo-interprétation de ~200 points de contrôle | Géoservices IGN |
 | Sentinel-1 GRD (option) | Radar, insensible aux nuages | GEE `COPERNICUS/S1_GRD` |
 
@@ -50,6 +50,7 @@ Toutes les sources sont gratuites.
 
 | Étape | Commande | Module |
 | --- | --- | --- |
+| 0. Masque résineux | `make spruce-mask` | `forest_dieback.masks` |
 | 1. Extraction S2 masquée | `make extract-check`, `extract-samples`, `extract-rasters` | `forest_dieback.gee` |
 | 2. Indices spectraux | *(à venir, avec le cube)* | `forest_dieback.indices` |
 | 3. Référence FORDEAD | `make fordead` | `scripts/run_fordead.py` |
@@ -59,6 +60,8 @@ Toutes les sources sont gratuites.
 | 7. Frugalité | `make benchmark` | `forest_dieback.export` |
 
 Tous les paramètres (zone, dates, bandes, hyperparamètres) sont dans [`configs/default.yaml`](configs/default.yaml).
+La marche à suivre de l'étape 1, du contrôle de zone au masque BD Forêt actif dans Earth Engine,
+est détaillée dans [`docs/EXTRACTION.md`](docs/EXTRACTION.md).
 
 ### Extraction Sentinel-2
 
@@ -66,7 +69,8 @@ Exporter chaque image brute de la zone représenterait environ 1 300 dates et 20
 
 - composites médians sur une grille de 10 jours, après masquage Cloud Score+ ;
 - cinq bandes seulement (B4, B8, B8A, B11, B12), suffisantes pour CRSWIR, NDVI et NDWI, en entiers 16 bits ;
-- pixels limités au masque des épicéas (BD Forêt V2 envoyée en asset GEE) ou, à défaut, aux arbres d'ESA WorldCover ;
+- pixels limités au masque des épicéas (BD Forêt V2 envoyée en asset GEE) ou, à défaut, aux arbres
+  d'ESA WorldCover, qui couvrent 84 % de la zone contre 22 % pour les peuplements résineux ;
 - images restreintes aux tuiles MGRS d'une seule zone UTM (`sentinel2.tiles`) : quatre tuiles voient les Hautes-Vosges
   et livrent les mêmes acquisitions, n'en garder que deux divise le calcul par deux sans perdre une seule date et
   évite de reprojeter des réflectances à la volée.

@@ -34,6 +34,11 @@ indices: [CRSWIR, NDVI, NDWI]
 
 labels:
   fordead_dir: data/raw/fordead
+  spruce_essences: ["Sapin, épicéa", "Conifères"]
+                          # essences BD Forêt V2 du masque. « Conifères » désigne les
+                          # résineux non différenciés, ici surtout sapin-épicéa.
+                          # « Mixte » (33 % de la zone) est écarté : la plupart de ses
+                          # pixels n'ont pas d'épicéa et bruiteraient les étiquettes.
   spruce_mask: data/raw/bdforet_epicea.gpkg
   control_points: data/raw/control_points.gpkg
 

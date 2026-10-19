@@ -14,6 +14,11 @@ test:
 	$(RUN) pytest -q
 
 spruce-mask:      ## masque épicéa depuis la BD Forêt extraite dans data/raw/bdforet/
+	@find data/raw/bdforet -name '*.shp' 2>/dev/null | grep -q . || { \
+	  echo "Aucun shapefile dans data/raw/bdforet/."; \
+	  echo "Télécharger la BD Forêt V2 des départements qui couvrent la zone"; \
+	  echo "(68, 88 et 90 pour la Thur et la Doller) sur https://geoservices.ign.fr/bdforet,"; \
+	  echo "puis extraire les archives dans ce dossier."; exit 1; }
 	$(RUN) python scripts/prepare_spruce_mask.py $$(find data/raw/bdforet -name '*.shp')
 
 extract-check:    ## 1. chiffres clés de la zone (GEE), sans export

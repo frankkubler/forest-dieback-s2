@@ -6,7 +6,7 @@ Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une
 
 - [x] Compte et projet Google Earth Engine
 - [x] Choix de la zone, vérification avec `make extract-check`
-- [ ] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`)
+- [ ] Masque épicéa BD Forêt envoyé en asset GEE (`make spruce-mask`, voir [EXTRACTION.md](EXTRACTION.md))
 - [ ] Export des séries de pixels (`make extract-samples`) et des piles annuelles (`make extract-rasters`)
 - [ ] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [ ] Exécution de `fordead` sur la zone, carte des anomalies (`make fordead`)
@@ -35,9 +35,25 @@ Carré de 20 × 20 km des vallées de la Thur et de la Doller, vérifié avec
 | Couverture claire 2023 | 72 % en moyenne, 79 % d'avril à septembre, 12 composites sur 37 sous 50 % |
 
 La série est donc assez continue sur la saison de végétation, qui porte le
-signal du dépérissement. Le masque reste provisoirement celui des arbres
-d'ESA WorldCover (84 % de la zone, feuillus compris) : il sera remplacé par
-les peuplements sapin-épicéa de la BD Forêt V2 avant les exports.
+signal du dépérissement.
+
+## Masque résineux
+
+La BD Forêt V2 des départements 68, 88 et 90 couvre la zone. Sur ses
+324 km² de forêt, les essences se répartissent ainsi :
+
+| Essence | Surface dans la zone | Part de la zone |
+| --- | --- | --- |
+| Mixte (feuillus et conifères) | 133,1 km² | 33,3 % |
+| Sapin, épicéa | 67,7 km² | 16,9 % |
+| Hêtre | 38,3 km² | 9,6 % |
+| Feuillus | 38,1 km² | 9,5 % |
+| Conifères non différenciés | 21,2 km² | 5,3 % |
+
+Le masque retient « Sapin, épicéa » et « Conifères » (`labels.spruce_essences`),
+soit 88,9 km², 22 % de la zone, contre 84 % pour les arbres d'ESA WorldCover.
+« Mixte » est écarté bien qu'il pèse le double : la plupart de ses pixels n'ont
+pas d'épicéa et bruiteraient autant les étiquettes FORDEAD que l'entraînement.
 
 ## Sources
 

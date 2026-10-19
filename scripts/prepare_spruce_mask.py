@@ -6,11 +6,12 @@ Télécharger la BD Forêt V2 des départements couvrant la zone (Haut-Rhin, et
 vérifier Vosges et Territoire de Belfort pour la pointe ouest) sur
 https://geoservices.ign.fr/bdforet, puis extraire les archives.
 
-Dans la BD Forêt V2, épicéa et sapin forment une seule essence ; le masque
-inclut donc les sapinières, moins touchées par le typographe.
+Les essences retenues sont celles de ``labels.spruce_essences``. Dans la
+BD Forêt V2, épicéa et sapin forment une seule essence : le masque inclut
+donc les sapinières, moins touchées par le typographe.
 
 Sorties : un GeoPackage (``labels.spruce_mask``) et une archive shapefile à
-envoyer dans les assets GEE, dont la commande s'affiche à la fin.
+envoyer dans les assets GEE par le Code Editor (voir ``docs/EXTRACTION.md``).
 """
 
 import argparse
@@ -30,13 +31,15 @@ def main() -> None:
     p.add_argument("inputs", nargs="+", type=Path, help="fichiers BD Forêt (shp ou gpkg)")
     p.add_argument("--config", default=None)
     p.add_argument("--field", default="ESSENCE")
-    p.add_argument("--values", nargs="+", default=["Sapin, épicéa"])
+    p.add_argument("--values", nargs="+", default=None,
+                   help="essences retenues (défaut : labels.spruce_essences)")
     args = p.parse_args()
 
     cfg = load_config(args.config)
+    values = args.values or cfg["labels"]["spruce_essences"]
     gdf = pd.concat([gpd.read_file(f) for f in args.inputs], ignore_index=True)
     try:
-        stands = filter_stands(gdf, args.field, args.values, cfg["aoi"]["bbox"])
+        stands = filter_stands(gdf, args.field, values, cfg["aoi"]["bbox"])
     except KeyError as e:
         raise SystemExit(e) from e
     if stands.empty:
@@ -56,11 +59,16 @@ def main() -> None:
             z.write(f, f.name)
 
     area = stands.to_crs(cfg["aoi"]["crs"]).area.sum() / 1e6
-    print(f"{len(stands)} polygones, {area:.1f} km² -> {gpkg} et {archive}")
+    print(f"{len(stands)} polygones ({', '.join(values)}), "
+          f"{area:.1f} km² -> {gpkg} et {archive}")
     project = cfg["gee"]["project"] or "<projet>"
     asset = f"projects/{project}/assets/bdforet_epicea"
-    print(f"Envoi vers GEE :\n  earthengine upload table --asset_id={asset} {archive}")
-    print(f"puis renseigner extraction.mask_asset: {asset} dans la configuration.")
+    print("Envoi vers GEE : « earthengine upload table » n'accepte que des URL gs://,\n"
+          "donc passer par le Code Editor (Assets > NEW > Shape files) avec\n"
+          f"  {archive}\n"
+          f"et pour nom d'asset  {asset}\n"
+          f"puis renseigner extraction.mask_asset: {asset} dans la configuration.\n"
+          "Marche à suivre détaillée : docs/EXTRACTION.md")
 
 
 if __name__ == "__main__":
