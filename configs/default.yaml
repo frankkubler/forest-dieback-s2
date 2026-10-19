@@ -1,7 +1,7 @@
 # Paramètres du pipeline. Les chemins sont relatifs à la racine du dépôt.
 
 gee:
-  project: null            # surchargé par la variable d'environnement GEE_PROJECT
+  project: forest-dieback-s2            # surchargé par la variable d'environnement GEE_PROJECT
   drive_folder: forest-dieback-s2
 
 aoi:
