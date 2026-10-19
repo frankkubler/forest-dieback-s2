@@ -210,9 +210,18 @@ uv run python scripts/build_dataset.py --labels data/raw/fordead/zones.gpkg
 ```
 
 Le script assemble les CSV sur la grille régulière des composites, passe aux
-indices (`indices` de la configuration, CRSWIR en premier), comble les trous
-nuageux par interpolation linéaire, écarte les pixels sans aucune observation
-et découpe l'espace en blocs. Il écrit `data/processed/dataset.npz`, que
+indices (`indices` de la configuration, CRSWIR en premier), écarte les valeurs
+hors des plages physiques (`indices_range`), comble les trous nuageux par
+interpolation linéaire, écarte les pixels sans aucune observation et découpe
+l'espace en blocs.
+
+Le garde-fou des plages n'est pas théorique : sur la zone, une poignée de
+composites de décembre et janvier portent un CRSWIR allant jusqu'à 67, pour
+une médiane de 0,76. Les versants à l'ombre en plein hiver ont des
+réflectances si faibles que le continuum du CRSWIR s'annule et fait exploser
+le rapport. Cloud Score+ ne les écarte pas, puisque ce ne sont ni des nuages
+ni leurs ombres. Ces 21 valeurs sur 1,8 million gonflaient l'écart-type du
+canal de 7 %. Il écrit `data/processed/dataset.npz`, que
 `make train` et `scripts/plot_pixel.py` lisent directement.
 
 Il affiche au passage la part d'observations claires et l'équilibre des

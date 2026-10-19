@@ -3,6 +3,7 @@ import numpy as np
 from forest_dieback.dataset import (
     cube_to_indices,
     interpolate_gaps,
+    mask_implausible,
     normalize,
     resample_series,
     scale_reflectance,
@@ -82,3 +83,16 @@ def test_interpolate_gaps_fills_cloudy_dates():
     cube = np.array([[[0.0], [np.nan], [2.0]]], dtype=np.float32)
     out = interpolate_gaps(cube, np.array([0.0, 10.0, 20.0]))
     np.testing.assert_allclose(out[0, :, 0], [0.0, 1.0, 2.0])
+
+
+def test_mask_implausible_only_touches_bounded_channels():
+    series = np.array([[[67.0, 0.5], [0.8, 0.5], [-1.0, 9.9]]], dtype=np.float32)
+    out = mask_implausible(series, ["CRSWIR", "NDVI"], {"CRSWIR": [0.0, 2.0]})
+    assert np.isnan(out[0, 0, 0]) and np.isnan(out[0, 2, 0])  # 67 et -1 écartés
+    assert out[0, 1, 0] == 0.8                                 # la valeur plausible reste
+    assert out[0, 2, 1] == 9.9                                 # NDVI non borné : intact
+
+
+def test_mask_implausible_without_ranges_is_a_noop():
+    series = np.array([[[67.0]]], dtype=np.float32)
+    np.testing.assert_array_equal(mask_implausible(series, ["CRSWIR"], None), series)

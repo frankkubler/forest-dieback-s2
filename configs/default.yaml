@@ -31,6 +31,8 @@ extraction:
   seed: 42
 
 indices: [CRSWIR, NDVI, NDWI]
+indices_range:              # plages physiques ; au-delà, c'est un artefact, pas une mesure
+  CRSWIR: [0.0, 2.0]        # les ombres de relief hivernales annulent le continuum
 
 labels:
   fordead_dir: data/raw/fordead

@@ -23,6 +23,7 @@ from forest_dieback.dataset import (
     cube_to_indices,
     interpolate_gaps,
     long_table_to_cube,
+    mask_implausible,
     scale_reflectance,
     spatial_block_split,
 )
@@ -99,6 +100,13 @@ def main() -> None:
     print(f"Observations claires : {observed:.1%} des couples pixel-date")
 
     series = cube_to_indices(cube, bands, names)
+    ranges = cfg.get("indices_range")
+    if ranges:
+        avant = np.isfinite(series).sum()
+        series = mask_implausible(series, names, ranges)
+        ecartees = avant - np.isfinite(series).sum()
+        print(f"Valeurs hors plage physique écartées : {ecartees} "
+              f"({100 * ecartees / series.size:.3f} %)")
     if not args.no_interpolate:
         days = (dates - dates[0]).days.to_numpy().astype(np.float64)
         series = interpolate_gaps(series, days)
@@ -127,7 +135,10 @@ def main() -> None:
 
     out = args.out or Path(cfg["paths"]["processed"]) / "dataset.npz"
     out.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(out, series=series, labels=labels, x=x, y=y, split=split,
+    # split en chaînes de longueur fixe : un tableau d'objets imposerait
+    # allow_pickle=True à la relecture
+    np.savez_compressed(out, series=series, labels=labels, x=x, y=y,
+                        split=split.astype("U5"),
                         dates=np.array([str(d.date()) for d in dates]),
                         channels=np.array(names))
     print(f"Écrit : {out}  ({out.stat().st_size / 1e6:.1f} Mo, "

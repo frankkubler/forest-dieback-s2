@@ -75,6 +75,25 @@ def cube_to_indices(cube: np.ndarray, bands: list[str], names: list[str]) -> np.
     return np.stack([values[n] for n in names], axis=-1).astype(np.float32)
 
 
+def mask_implausible(series: np.ndarray, names: list[str],
+                     ranges: dict[str, list[float]] | None) -> np.ndarray:
+    """Met à NaN les valeurs d'indice hors de leur plage physique.
+
+    Une ombre de relief hivernale annule presque le continuum du CRSWIR et
+    fait exploser le rapport. Ce n'est pas une observation mais un artefact :
+    la traiter comme un trou, que l'interpolation comblera, vaut mieux que de
+    l'écrêter à une valeur arbitraire.
+    """
+    out = series.copy()
+    for i, name in enumerate(names):
+        bounds = (ranges or {}).get(name)
+        if bounds:
+            lo, hi = bounds
+            channel = out[:, :, i]
+            channel[(channel < lo) | (channel > hi)] = np.nan
+    return out
+
+
 def interpolate_gaps(cube: np.ndarray, dates: np.ndarray) -> np.ndarray:
     """Comble les trous temporels de chaque pixel par interpolation linéaire.
 

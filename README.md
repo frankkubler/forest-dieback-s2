@@ -89,8 +89,9 @@ Deux sorties, une tâche Drive par année :
 
 Une fois les CSV rapatriés de Drive dans `data/raw/s2/`, `make dataset` les assemble en
 `data/processed/dataset.npz` : lecture des tables longues, empilement sur la grille
-régulière des composites, passage aux indices, comblement des trous nuageux par
-interpolation, découpage spatial par blocs.
+régulière des composites, passage aux indices, rejet des valeurs hors plage physique
+(`indices_range` : les ombres de relief hivernales font exploser le CRSWIR), comblement
+des trous nuageux par interpolation, découpage spatial par blocs.
 
 ```bash
 make dataset                                              # sans étiquettes, pour inspecter
