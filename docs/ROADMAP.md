@@ -17,7 +17,7 @@ La marche à suivre détaillée de ces étapes est dans [EXTRACTION.md](EXTRACTI
 
 ## Jalon 2 — entretien technique (6 soirées)
 
-- [ ] TempCNN : entraînement et premiers résultats (`make train`)
+- [x] TempCNN : entraînement et premiers résultats (`make train`)
 - [ ] Exécution de `fordead` sur la zone pour une référence recalculée (`make fordead`)
 - [ ] Photo-interprétation des ~200 points de contrôle et comparaison avec FORDEAD (`make evaluate`)
 - [ ] Export ONNX, mesures de frugalité, Docker et CI (`make benchmark`)
@@ -61,6 +61,30 @@ pas d'épicéa et bruiteraient autant les étiquettes FORDEAD que l'entraînemen
 Une fois l'asset ingéré, Earth Engine en mesure 88,1 km² sur 881 237 pixels à
 10 m, pour 374 entités comme le GeoPackage local : l'écart de 0,9 % avec la
 géométrie est celui de la rasterisation.
+
+## Premiers résultats du TempCNN
+
+| Chiffre | Valeur |
+| --- | --- |
+| Précision / rappel / F1 (test, 699 pixels) | 0,45 / 0,81 / 0,58 |
+| Paramètres | 174 593 |
+| Taille ONNX | 0,70 Mo |
+| Inférence CPU | 160 µs par pixel, 160 s pour 100 km² |
+
+La tête dense concentrait d'abord 99 % des 4,3 millions de paramètres : elle
+aplatissait les 259 composites, soit 16 576 entrées. Un pooling temporel à
+huit pas la détache de la longueur de série et divise le modèle par 24, sans
+perte nette de qualité — le F1 de validation oscillant de 0,33 à 0,51 d'une
+époque à l'autre, les deux architectures ne se départagent pas sur ce seul
+chiffre.
+
+`AdaptiveAvgPool1d` ne s'exporte pas en ONNX quand la sortie ne divise pas
+l'entrée : le pooling se fait donc à pas fixe, la longueur de sortie étant
+mesurée à la construction du modèle.
+
+Reste à traiter : le modèle surapprend (la perte tombe pendant que le F1 de
+validation plafonne) et le jeu de validation ne compte qu'une trentaine de
+pixels attaqués, ce qui rend son F1 très instable.
 
 ## Référence FORDEAD : cartes publiées ou exécution locale
 

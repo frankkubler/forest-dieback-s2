@@ -49,6 +49,9 @@ def train(cfg: dict, data_path: Path | None = None, synthetic: bool = False,
                           batch_size=tc["batch_size"], shuffle=True, drop_last=True)
     val_dl = DataLoader(PixelSeriesDataset(val_x, labels[split == "val"]),
                         batch_size=tc["batch_size"])
+    test_x, _, _ = normalize(series[split == "test"], mean, std)
+    test_dl = DataLoader(PixelSeriesDataset(test_x, labels[split == "test"]),
+                         batch_size=tc["batch_size"])
 
     _, seq_len, n_channels = series.shape
     model = build_model(cfg, n_channels, seq_len)
@@ -80,15 +83,22 @@ def train(cfg: dict, data_path: Path | None = None, synthetic: bool = False,
             best_f1 = metrics["f1"]
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
 
+    # le jeu de test ne sert qu'ici, une fois, sur le meilleur état retenu
+    model.load_state_dict(best_state)
+    test_metrics = evaluate(model, test_dl)
+    print("test  " + "  ".join(f"{k} {v:.3f}" for k, v in test_metrics.items()))
+
     out = Path(cfg["paths"]["models"])
     out.mkdir(parents=True, exist_ok=True)
     torch.save({"state_dict": best_state, "mean": mean, "std": std,
                 "seq_len": seq_len, "n_channels": n_channels, "config": cfg},
                out / "tempcnn.pt")
-    summary = {"best_val_f1": best_f1, "n_params": count_parameters(model)}
+    summary = {"best_val_f1": best_f1, "n_params": count_parameters(model),
+               "test": test_metrics, "n_test": int((split == "test").sum())}
     (out / "train_summary.json").write_text(json.dumps(summary, indent=2))
     if run:
         mlflow.log_metric("best_val_f1", best_f1)
+        mlflow.log_metrics({f"test_{k}": v for k, v in test_metrics.items()})
         mlflow.end_run()
     return summary
 

@@ -20,7 +20,17 @@ Le projet compare un modèle de deep learning temporel (**TempCNN**) à la méth
 | Méthode | Précision | Rappel | F1 | Délai de détection (j) | Paramètres | Inférence 100 km² (CPU) |
 | --- | --- | --- | --- | --- | --- | --- |
 | FORDEAD (référence) | – | – | – | – | – | – |
-| TempCNN | – | – | – | – | – | – |
+| TempCNN | 0,45 | 0,81 | 0,58 | – | 174 593 | 160 s |
+
+Mesures sur le jeu de test, 699 pixels de blocs spatiaux disjoints de ceux de l'entraînement,
+**face aux étiquettes FORDEAD**. Ce n'est donc pas une évaluation indépendante : le modèle est
+jugé sur sa capacité à retrouver les détections de la méthode de référence, qui a elle-même ses
+erreurs. La ligne FORDEAD reste vide pour cette raison — elle obtiendrait 100 % contre ses
+propres cartes. Les deux lignes ne seront comparables qu'avec les points photo-interprétés.
+
+Le modèle privilégie le rappel : il retrouve 81 % des pixels que FORDEAD déclare dépérissants,
+au prix d'une alerte sur deux qui est fausse. C'est l'effet du poids de classe, les pixels
+attaqués ne représentant que 4,8 % du jeu. Le réseau tient dans 0,7 Mo une fois exporté en ONNX.
 
 ![CRSWIR des pixels sains et attaqués](docs/figures/healthy_vs_attacked.png)
 

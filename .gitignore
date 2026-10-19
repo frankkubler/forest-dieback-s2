@@ -12,6 +12,7 @@ data/*
 models/
 mlruns/
 mlartifacts/
+mlflow.db
 *.tif
 *.zarr
 *.nc

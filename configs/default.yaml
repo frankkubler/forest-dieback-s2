@@ -64,6 +64,8 @@ model:
   hidden: 64
   kernel_size: 5
   dropout: 0.2
+  pool: 8                   # pas de temps vus par la tête dense. Aplatir les 259
+                            # composites y mettait 99 % des paramètres du modèle.
 
 train:
   epochs: 30
