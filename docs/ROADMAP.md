@@ -2,7 +2,7 @@
 
 Environ 10 soirées de 2 à 3 h. Le jalon 1 suffit pour citer le projet dans une candidature ; le jalon 2 prépare l'entretien technique.
 
-## Jalon 1 — publiable (4 soirées)
+## Jalon 1
 
 La marche à suivre détaillée de ces étapes est dans [EXTRACTION.md](EXTRACTION.md).
 
@@ -15,7 +15,7 @@ La marche à suivre détaillée de ces étapes est dans [EXTRACTION.md](EXTRACTI
 - [x] Indices et figure pixel sain / pixel attaqué (`scripts/plot_pixel.py`)
 - [x] README illustré, dépôt public
 
-## Jalon 2 — entretien technique (6 soirées)
+## Jalon 2
 
 - [x] TempCNN : entraînement et premiers résultats (`make train`)
 - [ ] Exécution de `fordead` sur la zone pour une référence recalculée (`make fordead`)
@@ -90,12 +90,31 @@ pixels attaqués, ce qui rend son F1 très instable.
 
 Le jalon 1 s'appuie sur les [cartes publiées](https://doi.org/10.57745/8LJGQ9),
 qui couvrent la zone de 2018 à 2023 et fournissent les étiquettes. Faire
-tourner `fordead` sur la zone donnerait une référence recalculée avec les
-mêmes paramètres des deux côtés, mais le package demande un environnement
-conda séparé et des tuiles Sentinel-2 au format THEIA, que les exports GEE ne
-remplacent pas : plusieurs centaines de dates à télécharger. Ce chantier est
-reporté au jalon 2, la comparaison restant possible entre-temps sur les
-cartes publiées.
+tourner `fordead` donne en plus une référence recalculée avec les mêmes
+dates et la même zone que le modèle, seule façon de comparer deux méthodes
+à paramètres égaux.
+
+Ce chantier semblait d'abord hors de portée : la version 1 lisait des tuiles
+Sentinel-2 THEIA locales, soit des centaines de dates à télécharger. La
+version 2 lit un catalogue STAC distant et ne charge que les fenêtres utiles
+de la zone.
+
+Deux accès distincts s'y mêlent, et seul le premier est ouvert. La recherche
+d'images sur `api.stac.teledetection.fr` répond en moins d'une seconde sans
+rien demander. Les images elles-mêmes sont ailleurs, sur
+`s3-data.meso.umontpellier.fr`, qui refuse une requête anonyme (403). Le
+package `teledetection` ouvre donc un flux OAuth2 « device » vers le realm
+`cdsmtd` et attend qu'un navigateur autorise le code affiché.
+
+**`make fordead` suppose donc un compte sur la plateforme THEIA/MTD.** La
+première exécution doit se faire en interactif pour autoriser l'appareil ;
+le jeton est ensuite mis en cache. L'option `--dry-run` sert à vérifier cet
+accès sans lancer de calcul.
+
+Le package s'installe donc avec le reste (`uv sync --all-extras`, extra
+`fordead`). Il impose Python 3.12 par sa dépendance `simplestac`, ce qui a
+fait monter tout le projet de 3.11 à 3.12. Étant sous GPL-3 quand ce dépôt
+est sous MIT, il reste une dépendance facultative, appelée comme outil.
 
 ## Volumes exportés
 

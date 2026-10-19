@@ -54,6 +54,7 @@ Toutes les sources sont gratuites.
 | BD Forêt V2 (IGN) | Masque des peuplements d'épicéas (départements 68, 88 et 90) | Géoservices IGN |
 | BD ORTHO (IGN) | Photo-interprétation de ~200 points de contrôle | Géoservices IGN |
 | Sentinel-1 GRD (option) | Radar, insensible aux nuages | GEE `COPERNICUS/S1_GRD` |
+| Sentinel-2 L2A THEIA | Entrée de FORDEAD, lue à la demande | STAC `api.stac.teledetection.fr`, compte requis pour les images |
 
 **Biais connu :** un modèle entraîné sur les cartes FORDEAD apprend d'abord à imiter FORDEAD. C'est pourquoi l'évaluation finale ne s'appuie que sur les points photo-interprétés, indépendants des deux méthodes.
 
@@ -156,4 +157,7 @@ data/               données locales, non versionnées
 
 ## Licence
 
-Code sous licence MIT. Les données FORDEAD sont sous licence Etalab 2.0 et les données IGN sous licence ouverte Etalab.
+Code sous licence MIT. Les données FORDEAD sont sous licence Etalab 2.0 et les données IGN
+sous licence ouverte Etalab. Le package [`fordead`](https://gitlab.com/fordead/fordead_package),
+appelé par `make fordead`, est sous GPL-3 : c'est une dépendance facultative (extra `fordead`),
+utilisée comme outil et non intégrée au code de ce dépôt.

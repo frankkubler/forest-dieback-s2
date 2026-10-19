@@ -30,6 +30,14 @@ extraction:
   n_samples: 5000           # pixels tirés pour la commande « samples »
   seed: 42
 
+fordead:                    # méthode de référence (package GPL-3, extra « fordead »)
+  fit_start: "2017-01-01"   # modèle harmonique sur les années réputées saines ;
+  fit_end: "2017-12-31"     # la crise de scolytes des Vosges démarre en 2018
+  predict_start: "2018-01-01"
+  predict_end: null         # défaut : sentinel2.end_date
+  threshold: null           # écart au modèle déclenchant une anomalie (défaut fordead : 0.16)
+  nmax_anomaly: null        # anomalies consécutives avant confirmation (défaut : 3)
+
 indices: [CRSWIR, NDVI, NDWI]
 indices_range:              # plages physiques ; au-delà, c'est un artefact, pas une mesure
   CRSWIR: [0.0, 2.0]        # les ombres de relief hivernales annulent le continuum

@@ -30,8 +30,8 @@ extract-samples:  ## 1. séries de pixels tirés dans le masque (CSV vers Drive)
 extract-rasters:  ## 1. piles annuelles de composites (GeoTIFF vers Drive)
 	$(RUN) python scripts/extract_s2.py rasters
 
-fordead:          ## 3. méthode de référence (fordead installé à part)
-	python scripts/run_fordead.py --input data/raw/s2_theia
+fordead:          ## 3. méthode de référence FORDEAD, lue depuis un catalogue STAC
+	$(RUN) python scripts/run_fordead.py
 
 dataset:          ## 4. jeu d'entraînement depuis les CSV rapatriés dans data/raw/s2/
 	$(RUN) python scripts/build_dataset.py
