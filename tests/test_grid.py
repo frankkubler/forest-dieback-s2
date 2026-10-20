@@ -5,6 +5,7 @@ from forest_dieback.grid import (
     bbox_shape,
     coverage_summary,
     estimate_bytes,
+    split_bbox,
     year_periods,
     years_in_range,
 )
@@ -61,3 +62,33 @@ def test_coverage_summary_handles_a_year_without_any_composite():
     assert coverage_summary([], []) == {
         "mean": 0.0, "season_mean": 0.0, "n_season": 0, "n_poor": 0, "n_total": 0,
     }
+
+
+def test_split_bbox_covers_the_whole_area_without_overlap():
+    bbox = [6.88, 47.75, 7.15, 47.93]
+    fenetres = split_bbox(bbox, 2)
+    assert len(fenetres) == 4
+    assert {ij for ij, _ in fenetres} == {(0, 0), (0, 1), (1, 0), (1, 1)}
+    # les bords extrêmes des fenêtres redonnent l'emprise de départ
+    lons = [v for _, f in fenetres for v in (f[0], f[2])]
+    lats = [v for _, f in fenetres for v in (f[1], f[3])]
+    assert (min(lons), max(lons)) == (bbox[0], bbox[2])
+    assert (min(lats), max(lats)) == (bbox[1], bbox[3])
+    # la somme des surfaces égale celle de l'emprise : ni trou, ni recouvrement
+    aire = sum((f[2] - f[0]) * (f[3] - f[1]) for _, f in fenetres)
+    assert abs(aire - (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])) < 1e-12
+
+
+def test_split_bbox_of_one_returns_the_area_unchanged():
+    bbox = [6.88, 47.75, 7.15, 47.93]
+    fenetres = split_bbox(bbox, 1)
+    assert len(fenetres) == 1
+    (ij, f), = fenetres
+    assert ij == (0, 0)
+    assert f == bbox
+
+
+def test_split_bbox_refuses_an_empty_grid():
+    import pytest
+    with pytest.raises(ValueError, match="au moins une"):
+        split_bbox([0, 0, 1, 1], 0)

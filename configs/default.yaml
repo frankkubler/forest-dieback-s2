@@ -38,6 +38,17 @@ fordead:                    # méthode de référence (package GPL-3, extra « f
   threshold: null           # écart au modèle déclenchant une anomalie (défaut fordead : 0.16)
   nmax_anomaly: null        # anomalies consécutives avant confirmation (défaut : 3)
   write: [ANOMALY_CONFIRMED, ANOMALY_INDEX, DEVIATION]
+  grid: 2                   # découpe la zone en 2 x 2 fenêtres traitées l'une après l'autre.
+                            # L'analyse d'anomalies charge des séries entières : sur 581 dates,
+                            # la zone complète demanderait ~28 Go, une fenêtre sur quatre ~7 Go.
+                            # 1 : traiter la zone d'un seul tenant.
+  chunksize: 256            # côté des blocs traités en mémoire (défaut fordead : 512).
+                            # L'analyse d'anomalies charge des séries entières : sur 581 dates,
+                            # des blocs de 512 demandent plusieurs Go d'un coup.
+  trimmem: true             # rendre la mémoire au système après chaque raster écrit
+  restart_client: true      # redémarrer les workers entre les étapes, contre la fragmentation
+  memory_limit: 6GB         # plafond par worker dask ; null pour laisser dask décider
+  n_workers: 2
                           # couches écrites. Les 14 par défaut pèsent l'essentiel du
                           # volume ; ces trois suffisent à comparer avec le modèle.
                           # null : tout écrire, [] : rien que le modèle.

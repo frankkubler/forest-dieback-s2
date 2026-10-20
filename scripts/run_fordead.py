@@ -30,6 +30,31 @@ import geopandas as gpd
 from shapely.geometry import box
 
 from forest_dieback.config import load_config
+from forest_dieback.grid import split_bbox
+
+
+def build_config(FordeadConfig, fd, fit_start, fit_end, predict_start, predict_end):
+    """Configuration de FORDEAD d'après la section ``fordead``.
+
+    Les bornes d'une période changent d'un seul tenant : la configuration se
+    valide à chaque affectation, et poser « start » seul le comparerait à
+    l'ancien « end », encore à sa valeur par défaut.
+    """
+    config = FordeadConfig()
+    config.fit = config.fit.model_copy(update={"start": fit_start, "end": fit_end})
+    surveillance = {"start": predict_start, "end": predict_end}
+    if fd.get("threshold") is not None:
+        surveillance["anomaly_flag_formula"] = f"DEVIATION > {fd['threshold']}"
+    if fd.get("nmax_anomaly") is not None:
+        surveillance["nmax_anomaly"] = fd["nmax_anomaly"]
+    config.predict = config.predict.model_copy(update=surveillance)
+    if fd.get("write") is not None:
+        # Les couches intermédiaires pèsent l'essentiel du volume écrit :
+        # une liste vide ne garde que le modèle et les sorties de synthèse.
+        config.write = list(fd["write"])
+    if fd.get("chunksize"):
+        config.xarray = config.xarray.model_copy(update={"chunksize": fd["chunksize"]})
+    return config
 
 
 def main() -> None:
@@ -40,11 +65,14 @@ def main() -> None:
                    help="tuiles MGRS (défaut : sentinel2.tiles)")
     p.add_argument("--output", type=Path, default=None,
                    help="dossier de sortie (défaut : paths.interim/fordead)")
+    p.add_argument("--grid", type=int, default=None,
+                   help="découpe la zone en n x n fenêtres (défaut : fordead.grid)")
     p.add_argument("--dry-run", action="store_true",
                    help="compter les images disponibles, sans rien calculer")
     args = p.parse_args()
 
     try:
+        from dask.distributed import Client
         from fordead.stac import search_items
         from fordead.workflow import FordeadConfig, FordeadProcess
     except ImportError as e:
@@ -56,10 +84,6 @@ def main() -> None:
     cfg = load_config(args.config)
     fd = cfg.get("fordead", {})
     tiles = args.tiles or cfg["sentinel2"]["tiles"]
-    # Passer la zone en géométrie plutôt qu'en bbox : une bbox est lue dans la
-    # projection des images (UTM), et des degrés y désigneraient quelques mètres
-    # près de l'origine. Une GeoSeries porte son CRS et se reprojette seule.
-    zone = gpd.GeoSeries([box(*cfg["aoi"]["bbox"])], crs="EPSG:4326")
     # Chemin absolu : fordead réinjecte ses propres sorties dans la collection
     # STAC, et un href relatif n'y est pas résoluble — le calcul s'arrête alors
     # sur « Can not determine absolute path » après la première couche écrite.
@@ -69,42 +93,57 @@ def main() -> None:
     predict_start = fd.get("predict_start")
     predict_end = fd.get("predict_end") or cfg["sentinel2"]["end_date"]
 
-    for tile in tiles:
-        print(f"\n=== tuile {tile} ===")
-        collection = search_items(datetime=f"{fit_start}/{predict_end}", tile=tile)
-        print(f"{len(collection)} images entre {fit_start} et {predict_end}")
-        if args.dry_run:
-            continue
+    # L'analyse d'anomalies charge des séries temporelles entières : la mémoire
+    # demandée suit la surface de la fenêtre multipliée par le nombre de dates.
+    # Découper l'espace est le seul moyen de la borner, les dates portant le
+    # signal qu'on cherche.
+    fenetres = split_bbox(cfg["aoi"]["bbox"], int(args.grid or fd.get("grid") or 1))
 
-        # Les deux bornes changent d'un coup : la configuration se valide à
-        # chaque affectation, et poser « start » seul le comparerait à l'ancien
-        # « end », qui appartient encore aux valeurs par défaut.
-        config = FordeadConfig()
-        config.fit = config.fit.model_copy(update={"start": fit_start, "end": fit_end})
-        surveillance = {"start": predict_start, "end": predict_end}
-        if fd.get("threshold") is not None:
-            surveillance["anomaly_flag_formula"] = f"DEVIATION > {fd['threshold']}"
-        if fd.get("nmax_anomaly") is not None:
-            surveillance["nmax_anomaly"] = fd["nmax_anomaly"]
-        config.predict = config.predict.model_copy(update=surveillance)
-        if fd.get("write") is not None:
-            # Les couches intermédiaires pèsent l'essentiel du volume écrit :
-            # une liste vide ne garde que le modèle et les sorties de synthèse.
-            config.write = list(fd["write"])
+    # « trimmem » et « restart_client » passent par le client dask : sans lui,
+    # fordead ne les applique pas.
+    client = None
+    if fd.get("trimmem") or fd.get("restart_client") or fd.get("memory_limit"):
+        client = Client(n_workers=int(fd.get("n_workers") or 2), threads_per_worker=2,
+                        memory_limit=fd.get("memory_limit") or "auto",
+                        processes=True, dashboard_address=None)
+        print(f"Client dask : {len(client.scheduler_info()['workers'])} workers, "
+              f"plafond {fd.get('memory_limit') or 'auto'} chacun", flush=True)
 
-        dest = out / tile
-        dest.mkdir(parents=True, exist_ok=True)
-        assert dest.is_absolute()  # cf. la remarque sur les href plus haut
-        process = FordeadProcess(collection, output_dir=str(dest),
-                                 geometry=zone, config=config)
-        print(f"Modèle harmonique sur {fit_start} à {fit_end}…", flush=True)
-        process.fit()
-        # predict() sans argument : il lit config.predict. Lui passer une
-        # période désynchronise la collection, que fit() vient d'enrichir.
-        print(f"Surveillance de {predict_start} à {predict_end}…", flush=True)
-        process.predict()
-        process.collection.save_object(str(dest / "processed_collection.json"))
-        print(f"Sorties dans {dest}")
+    try:
+        for tile in tiles:
+            print(f"\n=== tuile {tile} ===", flush=True)
+            collection = search_items(datetime=f"{fit_start}/{predict_end}", tile=tile)
+            print(f"{len(collection)} images entre {fit_start} et {predict_end}", flush=True)
+            if args.dry_run:
+                continue
+            if len(fenetres) > 1:
+                print(f"{len(fenetres)} fenêtres traitées l'une après l'autre", flush=True)
+
+            for (i, j), emprise in fenetres:
+                zone = gpd.GeoSeries([box(*emprise)], crs="EPSG:4326")
+                dest = out / tile if len(fenetres) == 1 else out / tile / f"w{i}{j}"
+                dest.mkdir(parents=True, exist_ok=True)
+                assert dest.is_absolute()  # cf. la remarque sur les href plus haut
+                if len(fenetres) > 1:
+                    print(f"\n-- fenêtre {i},{j} --", flush=True)
+
+                config = build_config(FordeadConfig, fd, fit_start, fit_end,
+                                      predict_start, predict_end)
+                process = FordeadProcess(collection, output_dir=str(dest), geometry=zone,
+                                         config=config, client=client,
+                                         trimmem=bool(fd.get("trimmem")),
+                                         restart_client=bool(fd.get("restart_client")))
+                print(f"Modèle harmonique sur {fit_start} à {fit_end}…", flush=True)
+                process.fit()
+                # predict() sans argument : il lit config.predict. Lui passer une
+                # période désynchronise la collection, que fit() vient d'enrichir.
+                print(f"Surveillance de {predict_start} à {predict_end}…", flush=True)
+                process.predict()
+                process.collection.save_object(str(dest / "processed_collection.json"))
+                print(f"Sorties dans {dest}", flush=True)
+    finally:
+        if client is not None:
+            client.close()
 
 
 if __name__ == "__main__":

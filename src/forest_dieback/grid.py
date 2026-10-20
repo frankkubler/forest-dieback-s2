@@ -78,3 +78,25 @@ def coverage_summary(periods: list[tuple[date, date]], fractions: list[float],
         "n_poor": sum(f < threshold for f in fractions),
         "n_total": len(fractions),
     }
+
+
+def split_bbox(bbox: list[float], n: int) -> list[tuple[tuple[int, int], list[float]]]:
+    """Découpe une emprise en une grille de n x n sous-fenêtres.
+
+    Chaque fenêtre est rendue avec ses indices (colonne, ligne) et sa propre
+    emprise, dans l'unité de ``bbox``. ``n = 1`` rend l'emprise entière.
+
+    Le découpage existe pour la mémoire : une analyse qui charge la série
+    temporelle complète d'une zone demande une place proportionnelle à sa
+    surface, que le nombre de dates multiplie.
+    """
+    if n < 1:
+        raise ValueError(f"Grille de {n} x {n} : il en faut au moins une.")
+    lon0, lat0, lon1, lat1 = bbox
+    dlon, dlat = (lon1 - lon0) / n, (lat1 - lat0) / n
+    return [
+        ((i, j), [lon0 + i * dlon, lat0 + j * dlat,
+                  lon0 + (i + 1) * dlon, lat0 + (j + 1) * dlat])
+        for i in range(n)
+        for j in range(n)
+    ]
