@@ -37,6 +37,10 @@ fordead:                    # méthode de référence (package GPL-3, extra « f
   predict_end: null         # défaut : sentinel2.end_date
   threshold: null           # écart au modèle déclenchant une anomalie (défaut fordead : 0.16)
   nmax_anomaly: null        # anomalies consécutives avant confirmation (défaut : 3)
+  write: [ANOMALY_CONFIRMED, ANOMALY_INDEX, DEVIATION]
+                          # couches écrites. Les 14 par défaut pèsent l'essentiel du
+                          # volume ; ces trois suffisent à comparer avec le modèle.
+                          # null : tout écrire, [] : rien que le modèle.
 
 indices: [CRSWIR, NDVI, NDWI]
 indices_range:              # plages physiques ; au-delà, c'est un artefact, pas une mesure

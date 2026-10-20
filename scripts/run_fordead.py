@@ -26,6 +26,9 @@ mêmes paramètres que le modèle, pour une comparaison de méthode à méthode.
 import argparse
 from pathlib import Path
 
+import geopandas as gpd
+from shapely.geometry import box
+
 from forest_dieback.config import load_config
 
 
@@ -53,8 +56,14 @@ def main() -> None:
     cfg = load_config(args.config)
     fd = cfg.get("fordead", {})
     tiles = args.tiles or cfg["sentinel2"]["tiles"]
-    bbox = cfg["aoi"]["bbox"]
-    out = args.output or Path(cfg["paths"]["interim"]) / "fordead"
+    # Passer la zone en géométrie plutôt qu'en bbox : une bbox est lue dans la
+    # projection des images (UTM), et des degrés y désigneraient quelques mètres
+    # près de l'origine. Une GeoSeries porte son CRS et se reprojette seule.
+    zone = gpd.GeoSeries([box(*cfg["aoi"]["bbox"])], crs="EPSG:4326")
+    # Chemin absolu : fordead réinjecte ses propres sorties dans la collection
+    # STAC, et un href relatif n'y est pas résoluble — le calcul s'arrête alors
+    # sur « Can not determine absolute path » après la première couche écrite.
+    out = (args.output or Path(cfg["paths"]["interim"]) / "fordead").resolve()
 
     fit_start, fit_end = fd.get("fit_start"), fd.get("fit_end")
     predict_start = fd.get("predict_start")
@@ -67,21 +76,34 @@ def main() -> None:
         if args.dry_run:
             continue
 
+        # Les deux bornes changent d'un coup : la configuration se valide à
+        # chaque affectation, et poser « start » seul le comparerait à l'ancien
+        # « end », qui appartient encore aux valeurs par défaut.
         config = FordeadConfig()
-        config.fit.start, config.fit.end = fit_start, fit_end
-        config.predict.start, config.predict.end = predict_start, predict_end
+        config.fit = config.fit.model_copy(update={"start": fit_start, "end": fit_end})
+        surveillance = {"start": predict_start, "end": predict_end}
         if fd.get("threshold") is not None:
-            config.predict.anomaly_flag_formula = f"DEVIATION > {fd['threshold']}"
+            surveillance["anomaly_flag_formula"] = f"DEVIATION > {fd['threshold']}"
         if fd.get("nmax_anomaly") is not None:
-            config.predict.nmax_anomaly = fd["nmax_anomaly"]
+            surveillance["nmax_anomaly"] = fd["nmax_anomaly"]
+        config.predict = config.predict.model_copy(update=surveillance)
+        if fd.get("write") is not None:
+            # Les couches intermédiaires pèsent l'essentiel du volume écrit :
+            # une liste vide ne garde que le modèle et les sorties de synthèse.
+            config.write = list(fd["write"])
 
         dest = out / tile
         dest.mkdir(parents=True, exist_ok=True)
-        process = FordeadProcess(collection, output_dir=str(dest), bbox=bbox, config=config)
+        assert dest.is_absolute()  # cf. la remarque sur les href plus haut
+        process = FordeadProcess(collection, output_dir=str(dest),
+                                 geometry=zone, config=config)
         print(f"Modèle harmonique sur {fit_start} à {fit_end}…", flush=True)
         process.fit()
+        # predict() sans argument : il lit config.predict. Lui passer une
+        # période désynchronise la collection, que fit() vient d'enrichir.
         print(f"Surveillance de {predict_start} à {predict_end}…", flush=True)
-        process.predict(timerange=(predict_start, predict_end))
+        process.predict()
+        process.collection.save_object(str(dest / "processed_collection.json"))
         print(f"Sorties dans {dest}")
 
 
